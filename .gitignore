@@ -1,0 +1,14 @@
+# Gradle files
+.gradle/
+build/
+
+# Android Studio
+.idea/
+*.iml
+
+# Large Gradle distribution zip (your error)
+*.zip
+gradle-*.zip
+
+# Local properties
+local.properties

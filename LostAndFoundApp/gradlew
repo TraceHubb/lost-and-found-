@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+#
+# Minimal Gradle Wrapper startup script for POSIX shells.
+#
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+WRAPPER_JAR="$DIR/gradle/wrapper/gradle-wrapper.jar"
+CLASSPATH="$WRAPPER_JAR"
+
+if [ ! -f "$WRAPPER_JAR" ]; then
+  echo "ERROR: Gradle wrapper jar not found at:"
+  echo "  $WRAPPER_JAR"
+  exit 1
+fi
+
+exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+
