@@ -28,6 +28,7 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     var showReportDialog by remember { mutableStateOf(false) }
+    var showBrowseDialog by remember { mutableStateOf(false) }
     
     if (showReportDialog) {
         AlertDialog(
@@ -50,6 +51,14 @@ fun HomeScreen(
                     Text("Report Found Item")
                 }
             }
+        )
+    }
+    
+    if (showBrowseDialog) {
+        BrowseSelectionDialog(
+            onDismiss = { showBrowseDialog = false },
+            onBrowseLost = onBrowseLost,
+            onBrowseFound = onBrowseFound
         )
     }
     
@@ -135,7 +144,7 @@ fun HomeScreen(
                         icon = Icons.Default.Search,
                         label = "Browse",
                         color = Color(0xFF9E9E9E),
-                        onClick = onBrowseLost
+                        onClick = { showBrowseDialog = true }
                     )
                     QuickActionIcon(
                         icon = Icons.Default.Check,
@@ -369,4 +378,33 @@ fun StatCard(title: String, value: String) {
             )
         }
     }
+}
+
+@Composable
+private fun BrowseSelectionDialog(
+    onDismiss: () -> Unit,
+    onBrowseLost: () -> Unit,
+    onBrowseFound: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Browse Items") },
+        text = { Text("What would you like to browse?") },
+        confirmButton = {
+            Button(onClick = {
+                onDismiss()
+                onBrowseLost()
+            }) {
+                Text("Browse Lost Items")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = {
+                onDismiss()
+                onBrowseFound()
+            }) {
+                Text("Browse Found Items")
+            }
+        }
+    )
 }
