@@ -64,10 +64,10 @@ fun ItemsListScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        // Blue Header Section
+        // Purple Header Section
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF4A90E2),
+            color = Color(0xFF6750A4),
             shadowElevation = 4.dp
         ) {
             Column(

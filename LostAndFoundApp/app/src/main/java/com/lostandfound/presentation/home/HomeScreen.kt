@@ -25,6 +25,7 @@ fun HomeScreen(
     onReportFound: () -> Unit,
     onBrowseLost: () -> Unit,
     onBrowseFound: () -> Unit,
+    onNavigateToMatching: () -> Unit,
     onLogout: () -> Unit
 ) {
     var showReportDialog by remember { mutableStateOf(false) }
@@ -132,7 +133,7 @@ fun HomeScreen(
                         icon = Icons.Default.Star,
                         label = "Matching",
                         color = Color(0xFFFFA500),
-                        onClick = {}
+                        onClick = onNavigateToMatching
                     )
                     QuickActionIcon(
                         icon = Icons.Default.Email,

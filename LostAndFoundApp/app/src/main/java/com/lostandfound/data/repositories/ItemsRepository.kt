@@ -82,6 +82,81 @@ object ItemsRepository {
         awaitClose { registration?.remove() }
     }
 
+    suspend fun getAllItems(): List<Item> {
+        return try {
+            val snapshot = FirebaseProviders.firestore
+                .collection(ITEMS_COLLECTION)
+                .get()
+                .await()
+            
+            snapshot.documents.mapNotNull { doc ->
+                val typeStr = (doc.getString("type") ?: ItemType.LOST.name)
+                val statusStr = (doc.getString("status") ?: ItemStatus.ACTIVE.name)
+                val parsedType = runCatching { ItemType.valueOf(typeStr) }.getOrDefault(ItemType.LOST)
+                val parsedStatus = runCatching { ItemStatus.valueOf(statusStr) }.getOrDefault(ItemStatus.ACTIVE)
+                
+                Item(
+                    id = doc.id,
+                    userId = doc.getString("userId") ?: "",
+                    itemName = doc.getString("itemName") ?: "",
+                    description = doc.getString("description") ?: "",
+                    location = doc.getString("location") ?: "",
+                    date = doc.getLong("date") ?: 0L,
+                    imageUrl = doc.getString("imageUrl") ?: "",
+                    type = parsedType,
+                    status = parsedStatus,
+                    contactEmail = doc.getString("contactEmail") ?: "",
+                    contactPhone = doc.getString("contactPhone") ?: "",
+                    datePosted = doc.getLong("datePosted") ?: 0L,
+                    category = doc.getString("category") ?: "",
+                    color = doc.getString("color") ?: "",
+                    brand = doc.getString("brand") ?: "",
+                    additionalDetails = doc.getString("additionalDetails") ?: ""
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getItemById(itemId: String): Item? {
+        return try {
+            val doc = FirebaseProviders.firestore
+                .collection(ITEMS_COLLECTION)
+                .document(itemId)
+                .get()
+                .await()
+            
+            if (!doc.exists()) return null
+            
+            val typeStr = (doc.getString("type") ?: ItemType.LOST.name)
+            val statusStr = (doc.getString("status") ?: ItemStatus.ACTIVE.name)
+            val parsedType = runCatching { ItemType.valueOf(typeStr) }.getOrDefault(ItemType.LOST)
+            val parsedStatus = runCatching { ItemStatus.valueOf(statusStr) }.getOrDefault(ItemStatus.ACTIVE)
+            
+            Item(
+                id = doc.id,
+                userId = doc.getString("userId") ?: "",
+                itemName = doc.getString("itemName") ?: "",
+                description = doc.getString("description") ?: "",
+                location = doc.getString("location") ?: "",
+                date = doc.getLong("date") ?: 0L,
+                imageUrl = doc.getString("imageUrl") ?: "",
+                type = parsedType,
+                status = parsedStatus,
+                contactEmail = doc.getString("contactEmail") ?: "",
+                contactPhone = doc.getString("contactPhone") ?: "",
+                datePosted = doc.getLong("datePosted") ?: 0L,
+                category = doc.getString("category") ?: "",
+                color = doc.getString("color") ?: "",
+                brand = doc.getString("brand") ?: "",
+                additionalDetails = doc.getString("additionalDetails") ?: ""
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     suspend fun addItem(
         item: Item,
         imageUri: Uri?,

@@ -12,6 +12,9 @@ import com.lostandfound.presentation.auth.RegisterScreen
 import com.lostandfound.presentation.home.HomeScreen
 import com.lostandfound.presentation.items.ItemsListScreen
 import com.lostandfound.presentation.items.ReportItemScreen
+import com.lostandfound.presentation.items.ItemDetailScreen
+import com.lostandfound.presentation.matching.MatchingScreen
+import com.lostandfound.presentation.matches.MatchResultsScreen
 
 @Composable
 fun AppNavGraph(
@@ -50,6 +53,7 @@ fun AppNavGraph(
                 onReportFound = { navController.navigate("report/${ItemType.FOUND.name}") },
                 onBrowseLost = { navController.navigate("items/${ItemType.LOST.name}") },
                 onBrowseFound = { navController.navigate("items/${ItemType.FOUND.name}") },
+                onNavigateToMatching = { navController.navigate("matching") },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
@@ -78,6 +82,40 @@ fun AppNavGraph(
             val type = runCatching { ItemType.valueOf(typeStr) }.getOrDefault(ItemType.LOST)
             ItemsListScreen(
                 type = type,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("matching") {
+            MatchingScreen(
+                onBack = { navController.popBackStack() },
+                onFindMatches = { itemId ->
+                    navController.navigate("match_results/$itemId")
+                }
+            )
+        }
+
+        composable(
+            route = "match_results/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            MatchResultsScreen(
+                itemId = itemId,
+                onBack = { navController.popBackStack() },
+                onViewDetails = { matchedItemId ->
+                    navController.navigate("item_detail/$matchedItemId")
+                }
+            )
+        }
+
+        composable(
+            route = "item_detail/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            ItemDetailScreen(
+                itemId = itemId,
                 onBack = { navController.popBackStack() }
             )
         }
