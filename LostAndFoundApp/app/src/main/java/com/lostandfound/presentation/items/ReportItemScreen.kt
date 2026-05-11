@@ -34,7 +34,10 @@ fun ReportLostItemScreen(
     onSubmit: () -> Unit
 ) {
     var itemName by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var color by remember { mutableStateOf("") }
+    var brand by remember { mutableStateOf("") }
+    var additionalDetails by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var contactEmail by remember { mutableStateOf("") }
     var contactPhone by remember { mutableStateOf("") }
@@ -42,6 +45,7 @@ fun ReportLostItemScreen(
     var isLoading by remember { mutableStateOf(false) }
     var isUploadingImage by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showCategoryDropdown by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -140,14 +144,86 @@ fun ReportLostItemScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                // Description
+                // Category Dropdown
+                Box {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        placeholder = { Text("Item Category *") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.List,
+                                contentDescription = null,
+                                tint = Color(0xFF6B4FA0)
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { showCategoryDropdown = !showCategoryDropdown }) {
+                                Icon(
+                                    if (showCategoryDropdown) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Dropdown"
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showCategoryDropdown = !showCategoryDropdown },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = lightPurple,
+                            focusedContainerColor = lightPurple,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = Color(0xFF6B4FA0)
+                        )
+                    )
+                    
+                    DropdownMenu(
+                        expanded = showCategoryDropdown,
+                        onDismissRequest = { showCategoryDropdown = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        com.lostandfound.data.models.ItemCategories.categories.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat) },
+                                onClick = {
+                                    category = cat
+                                    showCategoryDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Color
+                FormField(
+                    icon = Icons.Default.Star,
+                    placeholder = "Color (e.g., Black, Blue)",
+                    value = color,
+                    onValueChange = { color = it },
+                    backgroundColor = lightPurple
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Brand
+                FormField(
+                    icon = Icons.Default.Info,
+                    placeholder = "Brand (e.g., Apple, Samsung)",
+                    value = brand,
+                    onValueChange = { brand = it },
+                    backgroundColor = lightPurple
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Additional Details
                 FormField(
                     icon = Icons.Default.List,
-                    placeholder = "Item Description (e.g., color, distinguishing marks)",
-                    value = description,
-                    onValueChange = { description = it },
+                    placeholder = "Additional Details (e.g., scratches, stickers, unique features)",
+                    value = additionalDetails,
+                    onValueChange = { additionalDetails = it },
                     backgroundColor = lightPurple,
-                    minLines = 4
+                    minLines = 3
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -267,8 +343,8 @@ fun ReportLostItemScreen(
                             errorMessage = "Please enter item name"
                             return@Button
                         }
-                        if (description.isBlank()) {
-                            errorMessage = "Please enter item description"
+                        if (category.isBlank()) {
+                            errorMessage = "Please select item category"
                             return@Button
                         }
                         if (location.isBlank()) {
@@ -286,12 +362,24 @@ fun ReportLostItemScreen(
                                     isUploadingImage = true
                                 }
                                 
+                                // Build description from structured fields
+                                val description = buildString {
+                                    if (category.isNotBlank()) append("Category: $category\n")
+                                    if (color.isNotBlank()) append("Color: $color\n")
+                                    if (brand.isNotBlank()) append("Brand: $brand\n")
+                                    if (additionalDetails.isNotBlank()) append("Details: $additionalDetails")
+                                }
+                                
                                 val item = Item(
                                     itemName = itemName,
                                     description = description,
                                     location = location,
                                     contactEmail = contactEmail,
                                     contactPhone = contactPhone,
+                                    category = category,
+                                    color = color,
+                                    brand = brand,
+                                    additionalDetails = additionalDetails,
                                     type = ItemType.LOST,
                                     date = System.currentTimeMillis()
                                 )

@@ -12,7 +12,12 @@ data class Item(
     val status: ItemStatus = ItemStatus.ACTIVE,
     val contactEmail: String = "",
     val contactPhone: String = "",
-    val datePosted: Long = System.currentTimeMillis()
+    val datePosted: Long = System.currentTimeMillis(),
+    // New structured fields
+    val category: String = "",
+    val color: String = "",
+    val brand: String = "",
+    val additionalDetails: String = ""
 )
 
 enum class ItemType {
@@ -21,4 +26,26 @@ enum class ItemType {
 
 enum class ItemStatus {
     ACTIVE, RECOVERED, CLAIMED
+}
+
+// Item categories for dropdown
+object ItemCategories {
+    val categories = listOf(
+        "Phone",
+        "Wallet",
+        "Keys",
+        "Bag/Backpack",
+        "Laptop",
+        "Tablet",
+        "Headphones",
+        "Watch",
+        "Jewelry",
+        "Clothing",
+        "Books",
+        "ID/Documents",
+        "Glasses",
+        "Umbrella",
+        "Water Bottle",
+        "Other"
+    )
 }

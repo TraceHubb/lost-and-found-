@@ -54,7 +54,11 @@ object ItemsRepository {
                     status = parsedStatus,
                     contactEmail = doc.getString("contactEmail") ?: "",
                     contactPhone = doc.getString("contactPhone") ?: "",
-                    datePosted = doc.getLong("datePosted") ?: 0L
+                    datePosted = doc.getLong("datePosted") ?: 0L,
+                    category = doc.getString("category") ?: "",
+                    color = doc.getString("color") ?: "",
+                    brand = doc.getString("brand") ?: "",
+                    additionalDetails = doc.getString("additionalDetails") ?: ""
                 )
             }
             
@@ -118,7 +122,11 @@ object ItemsRepository {
             "status" to toSave.status.name,
             "contactEmail" to toSave.contactEmail,
             "contactPhone" to toSave.contactPhone,
-            "datePosted" to toSave.datePosted
+            "datePosted" to toSave.datePosted,
+            "category" to toSave.category,
+            "color" to toSave.color,
+            "brand" to toSave.brand,
+            "additionalDetails" to toSave.additionalDetails
         )
 
         docRef.set(map).await()
