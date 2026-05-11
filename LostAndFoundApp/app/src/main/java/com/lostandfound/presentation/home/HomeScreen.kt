@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lostandfound.data.repositories.AuthRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,8 +27,12 @@ fun HomeScreen(
     onBrowseLost: () -> Unit,
     onBrowseFound: () -> Unit,
     onNavigateToMatching: () -> Unit,
-    onLogout: () -> Unit
+    onNavigateToItemsReady: () -> Unit,
+    onNavigateToItemsInReview: () -> Unit,
+    onLogout: () -> Unit,
+    viewModel: HomeViewModel = viewModel()
 ) {
+    val state by viewModel.state.collectAsState()
     var showReportDialog by remember { mutableStateOf(false) }
     var showBrowseDialog by remember { mutableStateOf(false) }
     
@@ -162,43 +167,63 @@ fun HomeScreen(
         }
         
         item {
-            // Notifications section
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Notifications",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    NotificationItem(
-                        icon = Icons.Default.Email,
-                        title = "Unanswered Messages",
-                        count = 2,
-                        iconColor = Color(0xFF4A90E2)
-                    )
-                    NotificationItem(
-                        icon = Icons.Default.ShoppingCart,
-                        title = "Items Ready",
-                        count = 3,
-                        iconColor = Color(0xFF9E9E9E)
-                    )
-                    NotificationItem(
-                        icon = Icons.Default.Star,
-                        title = "Matching Results",
-                        count = 24,
-                        iconColor = Color(0xFFFFA500)
-                    )
-                    NotificationItem(
-                        icon = Icons.Default.Check,
-                        title = "Items in Review",
-                        count = 2,
-                        iconColor = Color(0xFF4CAF50)
-                    )
+            // Notifications section - only show if there are notifications
+            val hasNotifications = (state.notificationCounts.itemsReady > 0 && !state.dismissedNotifications.contains("itemsReady")) ||
+                                 (state.notificationCounts.matchingResults > 0 && !state.dismissedNotifications.contains("matchingResults")) ||
+                                 (state.notificationCounts.itemsInReview > 0 && !state.dismissedNotifications.contains("itemsInReview"))
+            
+            if (hasNotifications) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Notifications",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        if (state.notificationCounts.itemsReady > 0 && !state.dismissedNotifications.contains("itemsReady")) {
+                            NotificationItem(
+                                icon = Icons.Default.ShoppingCart,
+                                title = "Items Ready",
+                                count = state.notificationCounts.itemsReady,
+                                iconColor = Color(0xFF9E9E9E),
+                                onClick = {
+                                    viewModel.dismissNotification("itemsReady")
+                                    onNavigateToItemsReady()
+                                }
+                            )
+                        }
+                        
+                        if (state.notificationCounts.matchingResults > 0 && !state.dismissedNotifications.contains("matchingResults")) {
+                            NotificationItem(
+                                icon = Icons.Default.Star,
+                                title = "Matching Results",
+                                count = state.notificationCounts.matchingResults,
+                                iconColor = Color(0xFFFFA500),
+                                onClick = {
+                                    viewModel.dismissNotification("matchingResults")
+                                    onNavigateToMatching()
+                                }
+                            )
+                        }
+                        
+                        if (state.notificationCounts.itemsInReview > 0 && !state.dismissedNotifications.contains("itemsInReview")) {
+                            NotificationItem(
+                                icon = Icons.Default.Check,
+                                title = "Items in Review",
+                                count = state.notificationCounts.itemsInReview,
+                                iconColor = Color(0xFF4CAF50),
+                                onClick = {
+                                    viewModel.dismissNotification("itemsInReview")
+                                    onNavigateToItemsInReview()
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -298,56 +323,62 @@ fun NotificationItem(
     icon: ImageVector,
     title: String,
     count: Int,
-    iconColor: Color
+    iconColor: Color,
+    onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(iconColor.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = title,
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(iconColor.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = title,
+                        tint = iconColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = count.toString(),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodySmall
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                Icons.Default.KeyboardArrowRight,
-                contentDescription = "View",
-                tint = Color.Gray
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = count.toString(),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    Icons.Default.KeyboardArrowRight,
+                    contentDescription = "View",
+                    tint = Color.Gray
+                )
+            }
         }
     }
 }

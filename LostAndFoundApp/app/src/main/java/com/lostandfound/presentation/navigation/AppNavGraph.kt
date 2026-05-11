@@ -54,6 +54,8 @@ fun AppNavGraph(
                 onBrowseLost = { navController.navigate("items/${ItemType.LOST.name}") },
                 onBrowseFound = { navController.navigate("items/${ItemType.FOUND.name}") },
                 onNavigateToMatching = { navController.navigate("matching") },
+                onNavigateToItemsReady = { navController.navigate("items/${ItemType.LOST.name}") },
+                onNavigateToItemsInReview = { navController.navigate("items/${ItemType.LOST.name}") },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
