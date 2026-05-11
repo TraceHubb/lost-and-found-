@@ -23,7 +23,6 @@ object ItemsRepository {
 
         val baseQuery = FirebaseProviders.firestore
             .collection(ITEMS_COLLECTION)
-            .orderBy("datePosted", Query.Direction.DESCENDING)
 
         val q = if (type != null) {
             baseQuery.whereEqualTo("type", type.name)
@@ -58,12 +57,15 @@ object ItemsRepository {
                     datePosted = doc.getLong("datePosted") ?: 0L
                 )
             }
+            
+            // Sort by datePosted in memory (descending - newest first)
+            val sorted = all.sortedByDescending { it.datePosted }
 
             val needle = searchQuery.trim().lowercase()
             val filtered = if (needle.isEmpty()) {
-                all
+                sorted
             } else {
-                all.filter { item ->
+                sorted.filter { item ->
                     item.itemName.lowercase().contains(needle) ||
                         item.description.lowercase().contains(needle) ||
                         item.location.lowercase().contains(needle)
@@ -78,19 +80,23 @@ object ItemsRepository {
 
     suspend fun addItem(
         item: Item,
-        imageUri: Uri?
+        imageUri: Uri?,
+        context: android.content.Context
     ) {
         val userId = AuthRepository.currentUser?.uid ?: throw IllegalStateException("Not logged in")
         val docRef = FirebaseProviders.firestore.collection(ITEMS_COLLECTION).document()
 
-        val finalImageUrl = if (imageUri != null) {
-            val storageRef = FirebaseProviders.storage.reference
-                .child("items")
-                .child("${docRef.id}.jpg")
-            storageRef.putFile(imageUri).await()
-            storageRef.downloadUrl.await().toString()
-        } else {
-            ""
+        var finalImageUrl = ""
+        
+        // Upload image to Imgur if provided
+        if (imageUri != null) {
+            try {
+                val result = com.lostandfound.data.services.ImageUploadService.uploadImage(context, imageUri)
+                finalImageUrl = result.getOrElse { "" }
+            } catch (e: Exception) {
+                android.util.Log.e("ItemsRepository", "Failed to upload image: ${e.message}")
+                // Continue without image
+            }
         }
 
         val toSave = item.copy(

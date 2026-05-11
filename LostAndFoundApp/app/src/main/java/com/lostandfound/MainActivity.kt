@@ -21,8 +21,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    // Always start at login for testing
-                    val startDestination = "login"
+                    // Check if user is already logged in
+                    val currentUser = FirebaseProviders.auth.currentUser
+                    val startDestination = if (currentUser != null) "home" else "login"
                     AppNavGraph(
                         navController = navController,
                         startDestination = startDestination

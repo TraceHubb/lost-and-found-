@@ -1,6 +1,11 @@
 package com.lostandfound.presentation.items
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,10 +15,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.lostandfound.data.models.Item
+import com.lostandfound.data.models.ItemType
+import com.lostandfound.data.repositories.ItemsRepository
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,9 +38,22 @@ fun ReportLostItemScreen(
     var location by remember { mutableStateOf("") }
     var contactEmail by remember { mutableStateOf("") }
     var contactPhone by remember { mutableStateOf("") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var isUploadingImage by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val purpleColor = Color(0xFF6B4FA0)
     val lightPurple = Color(0xFFE8E0F5)
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
     
     Column(
         modifier = Modifier
@@ -63,11 +88,6 @@ fun ReportLostItemScreen(
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = "dagmawitadeferes@gmail.com",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
                     }
                 }
                 IconButton(onClick = {}) {
@@ -94,6 +114,22 @@ fun ReportLostItemScreen(
                 .padding(horizontal = 16.dp)
         ) {
             item {
+                // Error message
+                errorMessage?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                    ) {
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+                
                 // Item Name
                 FormField(
                     icon = Icons.Default.Phone,
@@ -118,7 +154,7 @@ fun ReportLostItemScreen(
                 // Location
                 FormField(
                     icon = Icons.Default.LocationOn,
-                    placeholder = "Specific Location found (e.g., Library, Cafeteria)",
+                    placeholder = "Specific Location lost (e.g., Library, Cafeteria)",
                     value = location,
                     onValueChange = { location = it },
                     backgroundColor = lightPurple
@@ -145,74 +181,148 @@ fun ReportLostItemScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Upload Photo
+                // Image Upload Section
                 OutlinedCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(80.dp),
+                        .height(if (selectedImageUri != null) 200.dp else 100.dp)
+                        .clickable { imagePickerLauncher.launch("image/*") },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                    if (selectedImageUri != null) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            AsyncImage(
+                                model = selectedImageUri,
+                                contentDescription = "Selected image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            IconButton(
+                                onClick = { selectedImageUri = null },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .background(Color.White.copy(alpha = 0.7f), RoundedCornerShape(50))
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Remove image",
+                                    tint = Color.Red
+                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "Camera",
-                                modifier = Modifier.size(24.dp)
+                                contentDescription = "Add photo",
+                                modifier = Modifier.size(40.dp),
+                                tint = purpleColor
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Gallery",
-                                modifier = Modifier.size(24.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Upload Item Photo (Optional)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Tap to select from gallery",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+                
+                if (isUploadingImage) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = purpleColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Upload Item Photo(s) (Optional)",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "Uploading image...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = purpleColor
                         )
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Save for later button
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA500)
-                    ),
-                    shape = RoundedCornerShape(28.dp)
-                ) {
-                    Icon(Icons.Default.Star, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save for later", style = MaterialTheme.typography.titleMedium)
-                }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
                 // Post button
                 Button(
-                    onClick = onSubmit,
+                    onClick = {
+                        if (itemName.isBlank()) {
+                            errorMessage = "Please enter item name"
+                            return@Button
+                        }
+                        if (description.isBlank()) {
+                            errorMessage = "Please enter item description"
+                            return@Button
+                        }
+                        if (location.isBlank()) {
+                            errorMessage = "Please enter location"
+                            return@Button
+                        }
+                        
+                        isLoading = true
+                        errorMessage = null
+                        
+                        scope.launch {
+                            try {
+                                // Show uploading indicator if image is selected
+                                if (selectedImageUri != null) {
+                                    isUploadingImage = true
+                                }
+                                
+                                val item = Item(
+                                    itemName = itemName,
+                                    description = description,
+                                    location = location,
+                                    contactEmail = contactEmail,
+                                    contactPhone = contactPhone,
+                                    type = ItemType.LOST,
+                                    date = System.currentTimeMillis()
+                                )
+                                ItemsRepository.addItem(item, selectedImageUri, context)
+                                
+                                isUploadingImage = false
+                                onSubmit()
+                            } catch (e: Exception) {
+                                errorMessage = "Failed to post item: ${e.message}"
+                                isLoading = false
+                                isUploadingImage = false
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = purpleColor
                     ),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(28.dp),
+                    enabled = !isLoading
                 ) {
-                    Text("Post Lost Item Report", style = MaterialTheme.typography.titleMedium)
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text("Post Lost Item Report", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(80.dp))
