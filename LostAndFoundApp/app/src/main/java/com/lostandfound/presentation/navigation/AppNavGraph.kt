@@ -9,6 +9,8 @@ import androidx.navigation.navArgument
 import com.lostandfound.data.models.ItemType
 import com.lostandfound.presentation.auth.LoginScreen
 import com.lostandfound.presentation.auth.RegisterScreen
+import com.lostandfound.presentation.claim.ContactInfoScreen
+import com.lostandfound.presentation.claim.OtpInputScreen
 import com.lostandfound.presentation.home.HomeScreen
 import com.lostandfound.presentation.items.ItemsListScreen
 import com.lostandfound.presentation.items.ReportItemScreen
@@ -49,8 +51,8 @@ fun AppNavGraph(
 
         composable("home") {
             HomeScreen(
-                onReportLost = { navController.navigate("report/${ItemType.LOST.name}") },
-                onReportFound = { navController.navigate("report/${ItemType.FOUND.name}") },
+                onReportLost = { navController.navigate("report") },
+                onReportFound = { navController.navigate("report") },
                 onBrowseLost = { navController.navigate("items/${ItemType.LOST.name}") },
                 onBrowseFound = { navController.navigate("items/${ItemType.FOUND.name}") },
                 onNavigateToMatching = { navController.navigate("matching") },
@@ -64,14 +66,9 @@ fun AppNavGraph(
             )
         }
 
-        composable(
-            route = "report/{type}",
-            arguments = listOf(navArgument("type") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val typeStr = backStackEntry.arguments?.getString("type") ?: ItemType.LOST.name
-            val type = runCatching { ItemType.valueOf(typeStr) }.getOrDefault(ItemType.LOST)
+        composable("report") {
             ReportItemScreen(
-                type = type,
+                type = ItemType.LOST,  // Default type, will be selected in Step 1
                 onDone = { navController.popBackStack() }
             )
         }
@@ -107,7 +104,8 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onViewDetails = { matchedItemId ->
                     navController.navigate("item_detail/$matchedItemId")
-                }
+                },
+                navController = navController
             )
         }
 
@@ -119,6 +117,36 @@ fun AppNavGraph(
             ItemDetailScreen(
                 itemId = itemId,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "otp_input/{matchId}/{lostItemId}/{foundItemId}",
+            arguments = listOf(
+                navArgument("matchId") { type = NavType.StringType },
+                navArgument("lostItemId") { type = NavType.StringType },
+                navArgument("foundItemId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+            val lostItemId = backStackEntry.arguments?.getString("lostItemId") ?: ""
+            val foundItemId = backStackEntry.arguments?.getString("foundItemId") ?: ""
+            OtpInputScreen(
+                matchId = matchId,
+                lostItemId = lostItemId,
+                foundItemId = foundItemId,
+                navController = navController
+            )
+        }
+
+        composable(
+            route = "contact_info/{matchId}",
+            arguments = listOf(navArgument("matchId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+            ContactInfoScreen(
+                matchId = matchId,
+                navController = navController
             )
         }
     }

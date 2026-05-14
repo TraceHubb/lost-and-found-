@@ -8,14 +8,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +26,16 @@ import coil.compose.AsyncImage
 import com.lostandfound.data.models.Item
 import com.lostandfound.data.repositories.ItemsRepository
 import kotlinx.coroutines.launch
+
+// Modern color palette
+private val PrimaryPurple = Color(0xFF8B5CF6)
+private val SecondaryPink = Color(0xFFEC4899)
+private val LightPurple = Color(0xFFF3E8FF)
+private val BackgroundWhite = Color(0xFFFAFAFA)
+private val CardWhite = Color(0xFFFFFFFF)
+private val GreenSuccess = Color(0xFF10B981)
+private val TextDark = Color(0xFF1F2937)
+private val TextGray = Color(0xFF6B7280)
 
 @Composable
 fun ItemDetailScreen(
@@ -59,35 +68,58 @@ fun ItemDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(BackgroundWhite)
     ) {
-        // Purple Header
+        // Modern Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF6750A4),
-            shadowElevation = 4.dp
+            color = CardWhite,
+            shadowElevation = 1.dp
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (onBack != null) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = TextDark
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Item Details",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = TextDark,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
                 }
-                Text(
-                    text = "Item Details",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
+                
+                // Logo
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(PrimaryPurple, SecondaryPink)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "F",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
         
@@ -98,7 +130,7 @@ fun ItemDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = PrimaryPurple)
                 }
             }
             
@@ -107,11 +139,20 @@ fun ItemDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = error ?: "An error occurred",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = error ?: "An error occurred",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextDark
+                        )
+                    }
                 }
             }
             
@@ -162,51 +203,51 @@ fun ItemDetailScreen(
                     
                     // Item Type Badge
                     Surface(
-                        color = if (item!!.type.name == "LOST") Color(0xFFFF6B6B) else Color(0xFF4CAF50),
-                        shape = RoundedCornerShape(16.dp)
+                        color = if (item!!.type.name == "LOST") Color(0xFFEF4444) else GreenSuccess,
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = if (item!!.type.name == "LOST") "Lost Item" else "Found Item",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                     
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    // Details Section Header
+                    Text(
+                        text = "Details",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                    
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Details Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Details",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            DetailRow("Category", item!!.category)
-                            DetailRow("Color", item!!.color)
-                            DetailRow("Brand", item!!.brand)
-                            DetailRow("Location", item!!.location)
-                            
-                            if (item!!.additionalDetails.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Additional Details:",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = item!!.additionalDetails,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
+                    // Details List
+                    DetailRowModern("Category:", item!!.category.ifBlank { "-" })
+                    DetailRowModern("Color:", item!!.color.ifBlank { "-" })
+                    DetailRowModern("Brand:", item!!.brand.ifBlank { "no brand" })
+                    DetailRowModern("Location:", item!!.location.ifBlank { "-" })
+                    
+                    if (item!!.additionalDetails.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Additional Details:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = item!!.additionalDetails,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextGray,
+                            lineHeight = 24.sp
+                        )
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -214,14 +255,26 @@ fun ItemDetailScreen(
                     // Contact Information Card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Contact Information",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = PrimaryPurple,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Contact Information",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark
+                                )
+                            }
                             Spacer(modifier = Modifier.height(12.dp))
                             
                             // Email
@@ -229,25 +282,36 @@ fun ItemDetailScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
+                                        .padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Email,
-                                        contentDescription = "Email",
-                                        tint = Color(0xFF6750A4),
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(LightPurple),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Email,
+                                            contentDescription = "Email",
+                                            tint = PrimaryPurple,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
                                             text = "Email",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = Color.Gray
+                                            color = TextGray,
+                                            fontWeight = FontWeight.Medium
                                         )
                                         Text(
                                             text = item!!.contactEmail,
-                                            style = MaterialTheme.typography.bodyMedium
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = TextDark,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
@@ -255,32 +319,52 @@ fun ItemDetailScreen(
                             
                             // Phone
                             if (item!!.contactPhone.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
+                                        .padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Phone,
-                                        contentDescription = "Phone",
-                                        tint = Color(0xFF4CAF50),
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFDCFCE7)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Phone,
+                                            contentDescription = "Phone",
+                                            tint = GreenSuccess,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
                                             text = "Phone",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = Color.Gray
+                                            color = TextGray,
+                                            fontWeight = FontWeight.Medium
                                         )
                                         Text(
                                             text = item!!.contactPhone,
-                                            style = MaterialTheme.typography.bodyMedium
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = TextDark,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
+                            }
+                            
+                            // Show message if no contact info
+                            if (item!!.contactEmail.isBlank() && item!!.contactPhone.isBlank()) {
+                                Text(
+                                    text = "No contact information provided",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextGray,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
                     }
@@ -297,7 +381,11 @@ fun ItemDetailScreen(
                                 }
                                 context.startActivity(intent)
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Email,
@@ -305,7 +393,11 @@ fun ItemDetailScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Send Email")
+                            Text(
+                                "Send Email",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                     
@@ -318,7 +410,12 @@ fun ItemDetailScreen(
                                 }
                                 context.startActivity(intent)
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = GreenSuccess),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GreenSuccess),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Phone,
@@ -326,7 +423,11 @@ fun ItemDetailScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Call")
+                            Text(
+                                "Call",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                     
@@ -343,19 +444,44 @@ private fun DetailRow(label: String, value: String) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = "$label:",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.width(100.dp)
+                fontWeight = FontWeight.Medium,
+                color = TextGray
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = TextDark,
+                fontWeight = FontWeight.SemiBold
             )
         }
+    }
+}
+
+@Composable
+private fun DetailRowModern(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = TextDark,
+            modifier = Modifier.width(140.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = TextGray,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

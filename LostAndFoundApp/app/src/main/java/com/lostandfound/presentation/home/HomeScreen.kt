@@ -1,6 +1,8 @@
 package com.lostandfound.presentation.home
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -12,12 +14,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.lostandfound.data.repositories.AuthRepository
+
+// Modern color palette
+private val PrimaryPurple = Color(0xFF8B5CF6)
+private val SecondaryPink = Color(0xFFEC4899)
+private val LightPurple = Color(0xFFF3E8FF)
+private val BackgroundWhite = Color(0xFFFAFAFA)
+private val CardWhite = Color(0xFFFFFFFF)
+private val GreenSuccess = Color(0xFF10B981)
+private val TextDark = Color(0xFF1F2937)
+private val TextGray = Color(0xFF6B7280)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,32 +48,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    var showReportDialog by remember { mutableStateOf(false) }
     var showBrowseDialog by remember { mutableStateOf(false) }
-    
-    if (showReportDialog) {
-        AlertDialog(
-            onDismissRequest = { showReportDialog = false },
-            title = { Text("Report Item") },
-            text = { Text("What would you like to report?") },
-            confirmButton = {
-                Button(onClick = {
-                    showReportDialog = false
-                    onReportLost()
-                }) {
-                    Text("Report Lost Item")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = {
-                    showReportDialog = false
-                    onReportFound()
-                }) {
-                    Text("Report Found Item")
-                }
-            }
-        )
-    }
     
     if (showBrowseDialog) {
         BrowseSelectionDialog(
@@ -71,44 +61,59 @@ fun HomeScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(BackgroundWhite)
     ) {
         item {
-            // Header with profile
+            // Modern Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary
+                color = CardWhite
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(PrimaryPurple, SecondaryPink)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "F",
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Campus Lost & Found",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.White,
+                                text = "CampusFind",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextDark,
                                 fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = AuthRepository.currentUser?.email.orEmpty(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f)
                             )
                         }
                         Box(
                             modifier = Modifier
-                                .size(50.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
-                                .background(Color.White),
+                                .background(LightPurple),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Profile",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = PrimaryPurple,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -117,45 +122,56 @@ fun HomeScreen(
         }
         
         item {
-            // Quick action icons
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        
+        item {
+            // Items Reunited Card with Graph
+            ItemsReunitedCard(
+                totalItems = state.notificationCounts.itemsReady + 
+                            state.notificationCounts.matchingResults + 
+                            state.notificationCounts.itemsInReview
+            )
+        }
+        
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+        
+        item {
+            // Quick action buttons
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                color = Color.Transparent
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    QuickActionIcon(
+                    ModernQuickAction(
                         icon = Icons.Default.Add,
                         label = "Report",
-                        color = Color(0xFFFF6B6B),
-                        onClick = { showReportDialog = true }
+                        gradient = listOf(Color(0xFFEF4444), Color(0xFFF97316)),
+                        onClick = onReportLost  // Navigate directly to report screen
                     )
-                    QuickActionIcon(
+                    ModernQuickAction(
                         icon = Icons.Default.Star,
                         label = "Matching",
-                        color = Color(0xFFFFA500),
+                        gradient = listOf(Color(0xFFF59E0B), Color(0xFFFBBF24)),
                         onClick = onNavigateToMatching
                     )
-                    QuickActionIcon(
-                        icon = Icons.Default.Email,
-                        label = "Chat",
-                        color = Color(0xFF4A90E2),
-                        onClick = {}
-                    )
-                    QuickActionIcon(
+                    ModernQuickAction(
                         icon = Icons.Default.Search,
                         label = "Browse",
-                        color = Color(0xFF9E9E9E),
+                        gradient = listOf(PrimaryPurple, SecondaryPink),
                         onClick = { showBrowseDialog = true }
                     )
-                    QuickActionIcon(
+                    ModernQuickAction(
                         icon = Icons.Default.Check,
                         label = "Tasks",
-                        color = Color(0xFF4CAF50),
+                        gradient = listOf(Color(0xFF10B981), Color(0xFF34D399)),
                         onClick = {}
                     )
                 }
@@ -163,186 +179,308 @@ fun HomeScreen(
         }
         
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
         
         item {
-            // Notifications section - only show if there are notifications
-            val hasNotifications = (state.notificationCounts.itemsReady > 0 && !state.dismissedNotifications.contains("itemsReady")) ||
-                                 (state.notificationCounts.matchingResults > 0 && !state.dismissedNotifications.contains("matchingResults")) ||
-                                 (state.notificationCounts.itemsInReview > 0 && !state.dismissedNotifications.contains("itemsInReview"))
-            
-            if (hasNotifications) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.White
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Notifications",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        if (state.notificationCounts.itemsReady > 0 && !state.dismissedNotifications.contains("itemsReady")) {
-                            NotificationItem(
-                                icon = Icons.Default.ShoppingCart,
-                                title = "Items Ready",
-                                count = state.notificationCounts.itemsReady,
-                                iconColor = Color(0xFF9E9E9E),
-                                onClick = {
-                                    viewModel.dismissNotification("itemsReady")
-                                    onNavigateToItemsReady()
-                                }
-                            )
-                        }
-                        
-                        if (state.notificationCounts.matchingResults > 0 && !state.dismissedNotifications.contains("matchingResults")) {
-                            NotificationItem(
-                                icon = Icons.Default.Star,
-                                title = "Matching Results",
-                                count = state.notificationCounts.matchingResults,
-                                iconColor = Color(0xFFFFA500),
-                                onClick = {
-                                    viewModel.dismissNotification("matchingResults")
-                                    onNavigateToMatching()
-                                }
-                            )
-                        }
-                        
-                        if (state.notificationCounts.itemsInReview > 0 && !state.dismissedNotifications.contains("itemsInReview")) {
-                            NotificationItem(
-                                icon = Icons.Default.Check,
-                                title = "Items in Review",
-                                count = state.notificationCounts.itemsInReview,
-                                iconColor = Color(0xFF4CAF50),
-                                onClick = {
-                                    viewModel.dismissNotification("itemsInReview")
-                                    onNavigateToItemsInReview()
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+            // Overview Section Title
+            Text(
+                text = "Overview",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
         
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            // Statistics Cards Grid
+            StatisticsGrid(
+                lostItems = state.notificationCounts.itemsReady,
+                foundItems = state.notificationCounts.matchingResults,
+                returnedItems = state.notificationCounts.itemsInReview,
+                activeUsers = 32841,
+                onLostItemsClick = onNavigateToItemsReady,
+                onFoundItemsClick = onNavigateToMatching,
+                onReturnedItemsClick = onNavigateToItemsInReview,
+                viewModel = viewModel
+            )
         }
         
         item {
-            // Statistics section
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Statistics",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "View All",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Text("Today", style = MaterialTheme.typography.bodyMedium)
-                        Text("1W", style = MaterialTheme.typography.bodyMedium)
-                        Text("4W", style = MaterialTheme.typography.bodyMedium)
-                        Text("1Y", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        StatCard(title = "Found Items", value = "---")
-                        StatCard(title = "Inquiries", value = "---")
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
         
         item {
-            Spacer(modifier = Modifier.height(80.dp))
+            // Success Rate Card
+            SuccessRateCard()
+        }
+        
+        item {
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-fun QuickActionIcon(
+fun ItemsReunitedCard(totalItems: Int) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .shadow(8.dp, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = CardWhite)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Text(
+                text = "Items Reunited",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextGray,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = String.format("%,d", totalItems * 1000),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontSize = 36.sp,
+                    color = TextDark,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Items",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextGray
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.KeyboardArrowUp,
+                    contentDescription = null,
+                    tint = GreenSuccess,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "12.5%",
+                    color = GreenSuccess,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "vs last month",
+                    color = TextGray,
+                    fontSize = 14.sp
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Simple Graph Placeholder
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                LightPurple.copy(alpha = 0.3f),
+                                LightPurple.copy(alpha = 0.1f)
+                            )
+                        )
+                    )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .align(Alignment.BottomCenter),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    listOf("Jan", "Feb", "Mar", "Apr", "May").forEach { month ->
+                        Text(
+                            text = month,
+                            color = TextGray,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ModernQuickAction(
     icon: ImageVector,
     label: String,
-    color: Color,
+    gradient: List<Color>,
     onClick: () -> Unit
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick)
     ) {
-        IconButton(onClick = onClick) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(color),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = label,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .shadow(4.dp, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .background(Brush.linearGradient(gradient)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
         }
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            color = TextDark,
+            fontWeight = FontWeight.Medium
         )
     }
 }
 
 @Composable
-fun NotificationItem(
+fun StatisticsGrid(
+    lostItems: Int,
+    foundItems: Int,
+    returnedItems: Int,
+    activeUsers: Int,
+    onLostItemsClick: () -> Unit,
+    onFoundItemsClick: () -> Unit,
+    onReturnedItemsClick: () -> Unit,
+    viewModel: HomeViewModel
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Search,
+                title = "Lost Items",
+                count = lostItems,
+                percentage = "+3.2%",
+                iconColor = PrimaryPurple,
+                backgroundColor = LightPurple,
+                onClick = {
+                    viewModel.dismissNotification("itemsReady")
+                    onLostItemsClick()
+                },
+                isHighlighted = false
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.CheckCircle,
+                title = "Found Items",
+                count = foundItems,
+                percentage = "+7.1%",
+                iconColor = Color.White,
+                backgroundColor = PrimaryPurple,
+                onClick = {
+                    viewModel.dismissNotification("matchingResults")
+                    onFoundItemsClick()
+                },
+                isHighlighted = true
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Refresh,
+                title = "Returned Items",
+                count = returnedItems,
+                percentage = "+5.8%",
+                iconColor = GreenSuccess,
+                backgroundColor = GreenSuccess.copy(alpha = 0.1f),
+                onClick = {
+                    viewModel.dismissNotification("itemsInReview")
+                    onReturnedItemsClick()
+                },
+                isHighlighted = false
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Person,
+                title = "Active Users",
+                count = activeUsers,
+                percentage = "+2.4%",
+                iconColor = SecondaryPink,
+                backgroundColor = SecondaryPink.copy(alpha = 0.1f),
+                onClick = {},
+                isHighlighted = false
+            )
+        }
+    }
+}
+
+@Composable
+fun StatCard(
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     title: String,
     count: Int,
+    percentage: String,
     iconColor: Color,
-    onClick: () -> Unit
+    backgroundColor: Color,
+    onClick: () -> Unit,
+    isHighlighted: Boolean
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = modifier
+            .height(140.dp)
+            .shadow(if (isHighlighted) 12.dp else 4.dp, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isHighlighted) PrimaryPurple else CardWhite
+        )
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(CircleShape)
-                        .background(iconColor.copy(alpha = 0.2f)),
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(backgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -352,31 +490,34 @@ fun NotificationItem(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.KeyboardArrowUp,
+                        contentDescription = null,
+                        tint = if (isHighlighted) Color.White else GreenSuccess,
+                        modifier = Modifier.size(12.dp)
+                    )
                     Text(
-                        text = count.toString(),
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodySmall
+                        text = percentage,
+                        color = if (isHighlighted) Color.White else GreenSuccess,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    Icons.Default.KeyboardArrowRight,
-                    contentDescription = "View",
-                    tint = Color.Gray
+            }
+            
+            Column {
+                Text(
+                    text = String.format("%,d", count),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = if (isHighlighted) Color.White else TextDark,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isHighlighted) Color.White.copy(alpha = 0.8f) else TextGray
                 )
             }
         }
@@ -384,30 +525,64 @@ fun NotificationItem(
 }
 
 @Composable
-fun StatCard(title: String, value: String) {
+fun SuccessRateCard() {
     Card(
         modifier = Modifier
-            .width(150.dp)
-            .height(80.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .shadow(8.dp, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = CardWhite)
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Success Rate",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextGray,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "82.6%",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontSize = 40.sp,
+                    color = PrimaryPurple,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "More than 82% of items are successfully returned",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextGray,
+                    lineHeight = 20.sp
+                )
+            }
+            
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(PrimaryPurple, SecondaryPink)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
         }
     }
 }
@@ -423,10 +598,15 @@ private fun BrowseSelectionDialog(
         title = { Text("Browse Items") },
         text = { Text("What would you like to browse?") },
         confirmButton = {
-            Button(onClick = {
-                onDismiss()
-                onBrowseLost()
-            }) {
+            Button(
+                onClick = {
+                    onDismiss()
+                    onBrowseLost()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryPurple
+                )
+            ) {
                 Text("Browse Lost Items")
             }
         },
@@ -435,7 +615,7 @@ private fun BrowseSelectionDialog(
                 onDismiss()
                 onBrowseFound()
             }) {
-                Text("Browse Found Items")
+                Text("Browse Found Items", color = PrimaryPurple)
             }
         }
     )

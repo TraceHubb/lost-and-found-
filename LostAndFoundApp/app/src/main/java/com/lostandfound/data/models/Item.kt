@@ -17,7 +17,10 @@ data class Item(
     val category: String = "",
     val color: String = "",
     val brand: String = "",
-    val additionalDetails: String = ""
+    val additionalDetails: String = "",
+    // Claim tracking fields
+    val claimedBy: String? = null,
+    val claimedAt: Long? = null
 )
 
 enum class ItemType {

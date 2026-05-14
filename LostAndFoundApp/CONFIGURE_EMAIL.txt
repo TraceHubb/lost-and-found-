@@ -1,0 +1,78 @@
+================================================================================
+                    EMAIL CONFIGURATION - QUICK START
+================================================================================
+
+TO ENABLE REAL EMAIL SENDING, FOLLOW THESE 3 SIMPLE STEPS:
+
+STEP 1: Create Gmail Account
+-----------------------------
+1. Go to: https://accounts.google.com
+2. Create new account (example: lostandfoundapp2024@gmail.com)
+3. Complete setup
+
+
+STEP 2: Get App Password
+-------------------------
+1. Go to: https://myaccount.google.com/security
+2. Enable "2-Step Verification" (if not already enabled)
+3. Click "App passwords" (appears after enabling 2-Step)
+4. Select "Mail" and "Other (Custom name)"
+5. Enter name: "Lost & Found App"
+6. Click "Generate"
+7. COPY the 16-character password (looks like: abcd efgh ijkl mnop)
+
+
+STEP 3: Update Code
+--------------------
+Open this file:
+  app/src/main/java/com/lostandfound/data/services/EmailService.kt
+
+Find these lines (around line 23-24):
+  private const val SENDER_EMAIL = "your-app-email@gmail.com"
+  private const val SENDER_PASSWORD = "your-app-password"
+
+Replace with YOUR credentials:
+  private const val SENDER_EMAIL = "lostandfoundapp2024@gmail.com"
+  private const val SENDER_PASSWORD = "abcd efgh ijkl mnop"
+
+Save the file and rebuild:
+  ./gradlew assembleDebug
+
+
+THAT'S IT! 
+================================================================================
+
+Now when users click "Claim" button:
+✅ Real OTP code will be generated
+✅ Email will be sent to the user's registered email
+✅ User receives professional HTML email with OTP
+✅ Resend button will work properly
+✅ Success email sent after verification
+
+================================================================================
+
+TESTING:
+1. Register with a real email address
+2. Report a lost item
+3. Report a found item (matching the lost item)
+4. Click "Claim" button
+5. Check your email inbox for OTP code
+6. Enter the OTP in the app
+7. Verify it works!
+
+================================================================================
+
+TROUBLESHOOTING:
+- Email not received? Check spam folder
+- "Authentication failed"? Make sure you're using App Password, not regular password
+- Still issues? Check Logcat: adb logcat | grep EmailService
+- OTP will be logged to console even if email fails (for debugging)
+
+================================================================================
+
+SECURITY NOTE:
+This setup is fine for testing/development. For production, move credentials
+to BuildConfig or Firebase Remote Config. See EMAIL_SETUP_INSTRUCTIONS.md
+for details.
+
+================================================================================

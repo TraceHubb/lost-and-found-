@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,6 +30,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -38,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -48,6 +53,15 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.lostandfound.data.models.Item
+
+// Modern color palette
+private val PrimaryPurple = Color(0xFF8B5CF6)
+private val SecondaryPink = Color(0xFFEC4899)
+private val LightPurple = Color(0xFFF3E8FF)
+private val BackgroundWhite = Color(0xFFFAFAFA)
+private val CardWhite = Color(0xFFFFFFFF)
+private val TextDark = Color(0xFF1F2937)
+private val TextGray = Color(0xFF6B7280)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,16 +75,16 @@ fun MatchingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(BackgroundWhite)
     ) {
-        // Purple Header Section
+        // Modern Header Section
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF6750A4),
-            shadowElevation = 4.dp
+            color = CardWhite,
+            shadowElevation = 1.dp
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(20.dp)
             ) {
                 // Back button and title
                 Row(
@@ -81,61 +95,51 @@ fun MatchingScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = TextDark
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "My Items",
+                        text = "All Items",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
+                        color = TextDark,
+                        fontWeight = FontWeight.Bold
                     )
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 // Search Bar
-                Surface(
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.updateSearchQuery(it) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    placeholder = { 
+                        Text(
+                            "Search your items",
+                            color = TextGray,
+                            fontSize = 14.sp
+                        ) 
+                    },
+                    leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
+                            tint = PrimaryPurple,
+                            modifier = Modifier.size(20.dp)
                         )
-                        
-                        TextField(
-                            value = state.searchQuery,
-                            onValueChange = { viewModel.updateSearchQuery(it) },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { 
-                                Text(
-                                    "Search your items",
-                                    color = Color.Gray
-                                ) 
-                            },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
-                            singleLine = true
-                        )
-                    }
-                }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = LightPurple,
+                        focusedContainerColor = LightPurple,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedBorderColor = PrimaryPurple,
+                        focusedTextColor = TextDark,
+                        unfocusedTextColor = TextDark
+                    ),
+                    singleLine = true
+                )
             }
         }
         
@@ -150,7 +154,7 @@ fun MatchingScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = Color(0xFF6750A4)
+                        color = PrimaryPurple
                     )
                 }
             }
@@ -317,33 +321,33 @@ private fun MatchedPairCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             // Match score badge at top
             Surface(
                 color = when {
-                    pair.matchScore >= 80 -> Color(0xFF4CAF50) // Green
-                    pair.matchScore >= 60 -> Color(0xFFFF9800) // Orange
-                    pair.matchScore >= 40 -> Color(0xFFFFEB3B) // Yellow
-                    else -> Color(0xFF9E9E9E) // Gray
+                    pair.matchScore >= 90 -> Color(0xFF10B981) // Green
+                    pair.matchScore >= 70 -> Color(0xFFFBBF24) // Yellow
+                    else -> Color(0xFFEF4444) // Red
                 },
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = "✓ ${pair.matchScore}% Match",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                     fontWeight = FontWeight.Bold
                 )
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             // Lost Item
             Row(
@@ -354,49 +358,58 @@ private fun MatchedPairCard(
                         model = pair.lostItem.imageUrl,
                         contentDescription = pair.lostItem.itemName,
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Image(
-                        painter = painterResource(android.R.drawable.ic_menu_report_image),
-                        contentDescription = null,
+                    Box(
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(LightPurple),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(android.R.drawable.ic_menu_report_image),
+                            contentDescription = null,
+                            tint = PrimaryPurple,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Surface(
-                        color = Color(0xFFFF6B6B),
-                        shape = RoundedCornerShape(4.dp)
+                        color = Color(0xFFEF4444),
+                        shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
                             text = "LOST",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = pair.lostItem.itemName,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
                     )
                     Text(
                         text = pair.lostItem.location,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = TextGray
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Divider with arrow
             Row(
@@ -406,12 +419,13 @@ private fun MatchedPairCard(
             ) {
                 Text(
                     text = "⬇ MATCHES ⬇",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextGray,
+                    fontWeight = FontWeight.Medium
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Found Item
             Row(
@@ -422,59 +436,147 @@ private fun MatchedPairCard(
                         model = pair.foundItem.imageUrl,
                         contentDescription = pair.foundItem.itemName,
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Image(
-                        painter = painterResource(android.R.drawable.ic_menu_report_image),
-                        contentDescription = null,
+                    Box(
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFDCFCE7)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(android.R.drawable.ic_menu_report_image),
+                            contentDescription = null,
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Surface(
-                        color = Color(0xFF4CAF50),
-                        shape = RoundedCornerShape(4.dp)
+                        color = Color(0xFF10B981),
+                        shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
                             text = "FOUND",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = pair.foundItem.itemName,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
                     )
                     Text(
                         text = pair.foundItem.location,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = TextGray
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            // Find Matches Button
+            // Match Reasons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Category Match
+                if (pair.lostItem.category == pair.foundItem.category && pair.lostItem.category.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(android.R.drawable.checkbox_on_background),
+                            contentDescription = null,
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Category Match",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextDark,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+                
+                // Color Match
+                if (pair.lostItem.color == pair.foundItem.color && pair.lostItem.color.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(android.R.drawable.checkbox_on_background),
+                            contentDescription = null,
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Color Match",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextDark,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+                
+                // Model/Brand Match
+                if (pair.lostItem.brand == pair.foundItem.brand && pair.lostItem.brand.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(android.R.drawable.checkbox_on_background),
+                            contentDescription = null,
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Model Match",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextDark,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // View Match Details Button
             Button(
                 onClick = onFindMatches,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
             ) {
                 Text(
                     text = "View Match Details",
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

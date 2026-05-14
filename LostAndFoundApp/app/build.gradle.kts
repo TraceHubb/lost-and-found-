@@ -49,6 +49,19 @@ android {
         abortOnError = false
         checkReleaseBuilds = false
     }
+    
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/NOTICE.md",
+                "META-INF/LICENSE.md",
+                "META-INF/NOTICE",
+                "META-INF/LICENSE",
+                "META-INF/NOTICE.txt",
+                "META-INF/LICENSE.txt"
+            )
+        }
+    }
 }
 
 dependencies {
@@ -85,6 +98,10 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // JavaMail for sending emails
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

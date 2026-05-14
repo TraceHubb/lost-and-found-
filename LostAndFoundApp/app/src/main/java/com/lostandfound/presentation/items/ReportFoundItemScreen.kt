@@ -46,8 +46,10 @@ fun ReportFoundItemScreen(
     
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val purpleColor = Color(0xFF6B4FA0)
-    val lightPurple = Color(0xFFE8E0F5)
+    val PrimaryPurple = Color(0xFF8B5CF6)
+    val SecondaryPink = Color(0xFFEC4899)
+    val LightPurple = Color(0xFFF3E8FF)
+    val BackgroundWhite = Color(0xFFFAFAFA)
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -59,12 +61,13 @@ fun ReportFoundItemScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(BackgroundWhite)
     ) {
         // Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = purpleColor
+            color = Color.White,
+            shadowElevation = 2.dp
         ) {
             Row(
                 modifier = Modifier
@@ -78,7 +81,7 @@ fun ReportFoundItemScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = PrimaryPurple
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -86,7 +89,7 @@ fun ReportFoundItemScreen(
                         Text(
                             text = "Campus Lost & Found",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
+                            color = Color(0xFF1F2937),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -95,7 +98,7 @@ fun ReportFoundItemScreen(
                     Icon(
                         Icons.Default.Person,
                         contentDescription = "Profile",
-                        tint = Color.White
+                        tint = PrimaryPurple
                     )
                 }
             }
@@ -137,7 +140,7 @@ fun ReportFoundItemScreen(
                     placeholder = "Item name (e.g., iPhone 13)",
                     value = itemName,
                     onValueChange = { itemName = it },
-                    backgroundColor = lightPurple
+                    backgroundColor = LightPurple
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -168,8 +171,8 @@ fun ReportFoundItemScreen(
                             .clickable { showCategoryDropdown = !showCategoryDropdown },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = lightPurple,
-                            focusedContainerColor = lightPurple,
+                            unfocusedContainerColor = LightPurple,
+                            focusedContainerColor = LightPurple,
                             unfocusedBorderColor = Color.Transparent,
                             focusedBorderColor = Color(0xFF6B4FA0)
                         )
@@ -199,7 +202,7 @@ fun ReportFoundItemScreen(
                     placeholder = "Color (e.g., Black, Blue)",
                     value = color,
                     onValueChange = { color = it },
-                    backgroundColor = lightPurple
+                    backgroundColor = LightPurple
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -209,7 +212,7 @@ fun ReportFoundItemScreen(
                     placeholder = "Brand (e.g., Apple, Samsung)",
                     value = brand,
                     onValueChange = { brand = it },
-                    backgroundColor = lightPurple
+                    backgroundColor = LightPurple
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -219,7 +222,7 @@ fun ReportFoundItemScreen(
                     placeholder = "Additional Details (e.g., scratches, stickers, unique features)",
                     value = additionalDetails,
                     onValueChange = { additionalDetails = it },
-                    backgroundColor = lightPurple,
+                    backgroundColor = LightPurple,
                     minLines = 3
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -230,27 +233,27 @@ fun ReportFoundItemScreen(
                     placeholder = "Specific Location where found (e.g., Library, Cafeteria)",
                     value = location,
                     onValueChange = { location = it },
-                    backgroundColor = lightPurple
+                    backgroundColor = LightPurple
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 // Contact Email
                 FormField(
                     icon = Icons.Default.Email,
-                    placeholder = "Contact email (optional)",
+                    placeholder = "Contact email *",
                     value = contactEmail,
                     onValueChange = { contactEmail = it },
-                    backgroundColor = lightPurple
+                    backgroundColor = LightPurple
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 // Contact Phone
                 FormField(
                     icon = Icons.Default.Phone,
-                    placeholder = "Contact phone (optional)",
+                    placeholder = "Contact phone *",
                     value = contactPhone,
                     onValueChange = { contactPhone = it },
-                    backgroundColor = lightPurple
+                    backgroundColor = LightPurple
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
@@ -294,7 +297,7 @@ fun ReportFoundItemScreen(
                                 Icons.Default.Add,
                                 contentDescription = "Add photo",
                                 modifier = Modifier.size(40.dp),
-                                tint = purpleColor
+                                tint = PrimaryPurple
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -320,13 +323,13 @@ fun ReportFoundItemScreen(
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = purpleColor
+                            color = PrimaryPurple
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Uploading image...",
                             style = MaterialTheme.typography.bodySmall,
-                            color = purpleColor
+                            color = PrimaryPurple
                         )
                     }
                 }
@@ -346,6 +349,14 @@ fun ReportFoundItemScreen(
                         }
                         if (location.isBlank()) {
                             errorMessage = "Please enter location"
+                            return@Button
+                        }
+                        if (contactEmail.isBlank() && contactPhone.isBlank()) {
+                            errorMessage = "Please provide at least one contact method (email or phone)"
+                            return@Button
+                        }
+                        if (contactEmail.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(contactEmail).matches()) {
+                            errorMessage = "Please enter a valid email address"
                             return@Button
                         }
                         
@@ -395,7 +406,7 @@ fun ReportFoundItemScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = purpleColor
+                        containerColor = PrimaryPurple
                     ),
                     shape = RoundedCornerShape(28.dp),
                     enabled = !isLoading
