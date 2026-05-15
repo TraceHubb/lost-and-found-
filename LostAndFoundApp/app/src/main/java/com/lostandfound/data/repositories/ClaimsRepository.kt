@@ -5,7 +5,9 @@ import com.lostandfound.data.firebase.FirebaseProviders
 import com.lostandfound.data.models.ClaimResult
 import com.lostandfound.data.models.ClaimErrorType
 import com.lostandfound.data.models.ContactInfo
+import com.lostandfound.data.models.OtpSessionCreated
 import com.lostandfound.data.models.OtpVerificationSession
+import com.lostandfound.data.services.EmailService
 import kotlinx.coroutines.tasks.await
 import java.security.SecureRandom
 
@@ -29,17 +31,26 @@ object ClaimsRepository {
         return otpValue.toString().padStart(6, '0')
     }
 
+    /**
+     * Checks no other *active* session uses this OTP.
+     * Uses a single-field query (otpCode) to avoid requiring a composite Firestore index.
+     */
     private suspend fun isOtpUnique(otpCode: String): Boolean {
         return try {
             val currentTime = System.currentTimeMillis()
             val snapshot = firestore.collection(OTP_SESSIONS_COLLECTION)
                 .whereEqualTo("otpCode", otpCode)
-                .whereGreaterThan("expiresAt", currentTime)
+                .limit(10)
                 .get()
                 .await()
-            snapshot.isEmpty
+            snapshot.documents.none { doc ->
+                val expiresAt = doc.getLong("expiresAt") ?: 0L
+                expiresAt > currentTime
+            }
         } catch (e: Exception) {
-            false
+            android.util.Log.e("ClaimsRepository", "isOtpUnique failed; allowing OTP", e)
+            // If Firestore fails, don't spin generating 10 codes — treat as unique.
+            true
         }
     }
 
@@ -56,34 +67,81 @@ object ClaimsRepository {
         }
     }
 
-    private suspend fun sendOtpEmail(email: String, otpCode: String): ClaimResult<Unit> {
-        return try {
-            // Get user's display name from Firebase Auth
-            val userName = AuthRepository.currentUser?.displayName ?: "User"
-            
-            // Send OTP email using EmailService
-            val success = com.lostandfound.data.services.EmailService.sendOtpEmail(
-                recipientEmail = email,
-                otpCode = otpCode,
-                recipientName = userName
-            )
-            
-            if (success) {
-                android.util.Log.d("ClaimsRepository", "OTP email sent successfully to $email")
-                ClaimResult.Success(Unit)
-            } else {
-                ClaimResult.Error(
-                    "Failed to send verification email. Please try again.",
-                    ClaimErrorType.NETWORK_ERROR
+    private suspend fun sendOtpEmail(email: String, otpCode: String): EmailService.EmailResult {
+        val userName = AuthRepository.currentUser?.displayName ?: "User"
+        return EmailService.sendOtpEmail(
+            recipientEmail = email,
+            otpCode = otpCode,
+            recipientName = userName
+        )
+    }
+
+    private fun buildOtpSessionResponse(
+        sessionId: String,
+        otpCode: String,
+        emailResult: EmailService.EmailResult
+    ): OtpSessionCreated {
+        return when (emailResult) {
+            is EmailService.EmailResult.Success -> {
+                val queued = emailResult.delivery == EmailService.DeliveryType.QUEUED_FIRESTORE
+                OtpSessionCreated(
+                    sessionId = sessionId,
+                    otpCode = otpCode,
+                    showOtpInApp = queued,
+                    emailNote = if (queued) {
+                        "Email is queued. Install Firebase Trigger Email extension, or use the code below."
+                    } else {
+                        null
+                    }
                 )
             }
-        } catch (e: Exception) {
-            android.util.Log.e("ClaimsRepository", "Error sending OTP email", e)
-            ClaimResult.Error(
-                "Failed to send verification email. Please try again.",
-                ClaimErrorType.NETWORK_ERROR
-            )
+            is EmailService.EmailResult.Failure -> {
+                android.util.Log.e("ClaimsRepository", "OTP email failed: ${emailResult.debugMessage}")
+                OtpSessionCreated(
+                    sessionId = sessionId,
+                    otpCode = otpCode,
+                    showOtpInApp = true,
+                    emailNote = "Email could not be sent. Use the verification code below."
+                )
+            }
         }
+    }
+
+    private fun sessionToMap(session: OtpVerificationSession): Map<String, Any?> = mapOf(
+        "id" to session.id,
+        "otpCode" to session.otpCode,
+        "userId" to session.userId,
+        "matchId" to session.matchId,
+        "lostItemId" to session.lostItemId,
+        "foundItemId" to session.foundItemId,
+        "createdAt" to session.createdAt,
+        "expiresAt" to session.expiresAt,
+        "isVerified" to session.isVerified,
+        "verifiedAt" to session.verifiedAt,
+        "attemptCount" to session.attemptCount,
+        "resendCount" to session.resendCount,
+        "lastResendAt" to session.lastResendAt
+    )
+
+    private fun parseOtpSession(doc: com.google.firebase.firestore.DocumentSnapshot): OtpVerificationSession? {
+        if (!doc.exists()) return null
+        return OtpVerificationSession(
+            id = doc.id,
+            otpCode = doc.getString("otpCode") ?: "",
+            userId = doc.getString("userId") ?: "",
+            matchId = doc.getString("matchId") ?: "",
+            lostItemId = doc.getString("lostItemId") ?: "",
+            foundItemId = doc.getString("foundItemId") ?: "",
+            createdAt = doc.getLong("createdAt") ?: 0L,
+            expiresAt = doc.getLong("expiresAt") ?: 0L,
+            isVerified = doc.getBoolean("isVerified")
+                ?: doc.getBoolean("verified")
+                ?: false,
+            verifiedAt = doc.getLong("verifiedAt"),
+            attemptCount = doc.getLong("attemptCount")?.toInt() ?: 0,
+            resendCount = doc.getLong("resendCount")?.toInt() ?: 0,
+            lastResendAt = doc.getLong("lastResendAt")
+        )
     }
 
     private suspend fun logAuditEvent(
@@ -111,7 +169,7 @@ object ClaimsRepository {
         matchId: String,
         lostItemId: String,
         foundItemId: String
-    ): ClaimResult<String> {
+    ): ClaimResult<OtpSessionCreated> {
         return try {
             if (!isAuthorizedToClaim(userId, lostItemId)) {
                 logAuditEvent(
@@ -161,13 +219,13 @@ object ClaimsRepository {
                 lastResendAt = null
             )
 
-            firestore.collection(OTP_SESSIONS_COLLECTION).document(session.id).set(session).await()
+            firestore.collection(OTP_SESSIONS_COLLECTION)
+                .document(session.id)
+                .set(sessionToMap(session))
+                .await()
 
             val emailResult = sendOtpEmail(userEmail, otpCode)
-            if (emailResult is ClaimResult.Error) {
-                firestore.collection(OTP_SESSIONS_COLLECTION).document(session.id).delete().await()
-                return emailResult
-            }
+            val response = buildOtpSessionResponse(session.id, otpCode, emailResult)
 
             logAuditEvent(
                 "OTP_SESSION_CREATED",
@@ -176,10 +234,11 @@ object ClaimsRepository {
                 mapOf(
                     "sessionId" to session.id,
                     "lostItemId" to lostItemId,
-                    "foundItemId" to foundItemId
+                    "foundItemId" to foundItemId,
+                    "emailDelivery" to emailResult.toString()
                 )
             )
-            ClaimResult.Success(session.id)
+            ClaimResult.Success(response)
         } catch (e: Exception) {
             ClaimResult.Error(
                 "Failed to create claim session. Please try again.",
@@ -190,15 +249,21 @@ object ClaimsRepository {
 
     private suspend fun getActiveSession(userId: String, matchId: String): OtpVerificationSession? {
         return try {
+            val now = System.currentTimeMillis()
             val snapshot = firestore.collection(OTP_SESSIONS_COLLECTION)
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("matchId", matchId)
-                .whereGreaterThan("expiresAt", System.currentTimeMillis())
                 .get()
                 .await()
-            if (snapshot.isEmpty) null else snapshot.documents.first()
-                .toObject(OtpVerificationSession::class.java)
+            snapshot.documents
+                .mapNotNull { doc -> parseOtpSession(doc) }
+                .filter { session ->
+                    session.matchId == matchId &&
+                        !session.isVerified &&
+                        session.expiresAt > now
+                }
+                .maxByOrNull { it.createdAt }
         } catch (e: Exception) {
+            android.util.Log.e("ClaimsRepository", "getActiveSession failed", e)
             null
         }
     }
@@ -388,17 +453,20 @@ object ClaimsRepository {
         matchId: String,
         lostItemId: String,
         foundItemId: String
-    ): ClaimResult<String> {
+    ): ClaimResult<OtpSessionCreated> {
         return try {
             val oneHourAgo = System.currentTimeMillis() - (60 * 60 * 1000)
-            val recentSessions = firestore.collection(OTP_SESSIONS_COLLECTION)
+            val userSessions = firestore.collection(OTP_SESSIONS_COLLECTION)
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("matchId", matchId)
-                .whereGreaterThan("createdAt", oneHourAgo)
                 .get()
                 .await()
 
-            if (recentSessions.size() >= MAX_RESEND_PER_HOUR) {
+            val recentResendCount = userSessions.documents.count { doc ->
+                doc.getString("matchId") == matchId &&
+                    (doc.getLong("createdAt") ?: 0L) > oneHourAgo
+            }
+
+            if (recentResendCount >= MAX_RESEND_PER_HOUR) {
                 return ClaimResult.Error(
                     "Too many requests. Please try again later.",
                     ClaimErrorType.RATE_LIMIT_EXCEEDED

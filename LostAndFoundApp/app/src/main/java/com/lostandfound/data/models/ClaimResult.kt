@@ -51,3 +51,12 @@ data class ContactInfo(
     val foundItemId: String,
     val lostItemId: String
 )
+
+/** Returned after OTP session is created or resent. */
+data class OtpSessionCreated(
+    val sessionId: String,
+    val otpCode: String,
+    /** True when email was only queued in Firestore (extension may not be installed). */
+    val showOtpInApp: Boolean,
+    val emailNote: String? = null
+)

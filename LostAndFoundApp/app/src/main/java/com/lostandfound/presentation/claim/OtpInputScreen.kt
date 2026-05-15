@@ -1,6 +1,7 @@
 package com.lostandfound.presentation.claim
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -12,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.lostandfound.data.models.ClaimErrorType
@@ -84,23 +86,66 @@ fun OtpInputScreen(
                 fontWeight = FontWeight.Bold
             )
             
-            // Instruction
-            Text(
-                text = "We've sent a 6-digit verification code to your email",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            // Email display (masked)
             if (uiState is ClaimUiState.OtpSent) {
-                val email = (uiState as ClaimUiState.OtpSent).email
-                val maskedEmail = maskEmail(email)
+                val sent = uiState as ClaimUiState.OtpSent
                 Text(
-                    text = maskedEmail,
+                    text = if (sent.showOtpInApp) {
+                        "Use the verification code below (email delivery is not set up yet)"
+                    } else {
+                        "We've sent a 6-digit verification code to your email"
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = maskEmail(sent.email),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
+                )
+                sent.emailNote?.let { note ->
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (sent.showOtpInApp) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Your verification code",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = sent.otpCode,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 4.sp
+                            )
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = "We've sent a 6-digit verification code to your email",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             

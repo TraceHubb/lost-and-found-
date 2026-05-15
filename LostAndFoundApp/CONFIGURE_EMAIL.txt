@@ -1,78 +1,95 @@
 ================================================================================
-                    EMAIL CONFIGURATION - QUICK START
+         EMAIL SETUP — OTP codes (read this if SMTP fails on phone)
 ================================================================================
 
-TO ENABLE REAL EMAIL SENDING, FOLLOW THESE 3 SIMPLE STEPS:
+WHY EMAIL FAILED ON YOUR PHONE
+--------------------------------
+Many phones/networks BLOCK Gmail SMTP ports (465 and 587). That causes:
+  "Could not convert socket to TLS" / "Could not connect to SMTP host"
 
-STEP 1: Create Gmail Account
------------------------------
-1. Go to: https://accounts.google.com
-2. Create new account (example: lostandfoundapp2024@gmail.com)
-3. Complete setup
-
-
-STEP 2: Get App Password
--------------------------
-1. Go to: https://myaccount.google.com/security
-2. Enable "2-Step Verification" (if not already enabled)
-3. Click "App passwords" (appears after enabling 2-Step)
-4. Select "Mail" and "Other (Custom name)"
-5. Enter name: "Lost & Found App"
-6. Click "Generate"
-7. COPY the 16-character password (looks like: abcd efgh ijkl mnop)
-
-
-STEP 3: Update Code
---------------------
-Open this file:
-  app/src/main/java/com/lostandfound/data/services/EmailService.kt
-
-Find these lines (around line 23-24):
-  private const val SENDER_EMAIL = "your-app-email@gmail.com"
-  private const val SENDER_PASSWORD = "your-app-password"
-
-Replace with YOUR credentials:
-  private const val SENDER_EMAIL = "lostandfoundapp2024@gmail.com"
-  private const val SENDER_PASSWORD = "abcd efgh ijkl mnop"
-
-Save the file and rebuild:
-  ./gradlew assembleDebug
-
-
-THAT'S IT! 
-================================================================================
-
-Now when users click "Claim" button:
-✅ Real OTP code will be generated
-✅ Email will be sent to the user's registered email
-✅ User receives professional HTML email with OTP
-✅ Resend button will work properly
-✅ Success email sent after verification
+The app no longer relies on sending mail directly from the phone.
+It queues mail in Firestore; Firebase sends it using your Gmail on the server.
 
 ================================================================================
-
-TESTING:
-1. Register with a real email address
-2. Report a lost item
-3. Report a found item (matching the lost item)
-4. Click "Claim" button
-5. Check your email inbox for OTP code
-6. Enter the OTP in the app
-7. Verify it works!
-
+OPTION A (RECOMMENDED): Firebase "Trigger Email" extension
 ================================================================================
 
-TROUBLESHOOTING:
-- Email not received? Check spam folder
-- "Authentication failed"? Make sure you're using App Password, not regular password
-- Still issues? Check Logcat: adb logcat | grep EmailService
-- OTP will be logged to console even if email fails (for debugging)
+ONE-TIME SETUP (about 10 minutes):
+
+1. Open Firebase Console for your project:
+   https://console.firebase.google.com/project/lost-and-found-app-4cf9d
+
+2. Go to: Build → Extensions → Browse extensions
+
+3. Search: "Trigger Email" (by Firebase)
+   Install it.
+
+4. When asked for SMTP settings, use YOUR Gmail:
+   - SMTP host: smtp.gmail.com
+   - Port: 587 (or 465)
+   - Username: dagmawitadeferes@gmail.com
+   - Password: your 16-character Gmail App Password (no spaces)
+   - From address: dagmawitadeferes@gmail.com
+
+5. Collection name: mail   (default — keep as "mail")
+
+6. Wait until extension status = "Installed" / "Active"
+
+7. Rebuild and run the app. Tap Claim again.
+
+HOW IT WORKS
+------------
+- App writes a document to Firestore collection: mail
+- Extension reads it and sends email via Gmail (server-side — works!)
+- Check your inbox for the OTP
+
+VERIFY IN FIREBASE
+------------------
+- Firestore → mail collection → new documents appear when you claim
+- Extension logs (Extensions → Trigger Email → Logs) show send success/failure
 
 ================================================================================
+OPTION B (OPTIONAL): EmailJS over HTTPS
+================================================================================
 
-SECURITY NOTE:
-This setup is fine for testing/development. For production, move credentials
-to BuildConfig or Firebase Remote Config. See EMAIL_SETUP_INSTRUCTIONS.md
-for details.
+If you cannot use the extension, use EmailJS (free tier):
+
+1. Sign up: https://www.emailjs.com
+2. Add Email Service (Gmail)
+3. Create template with variables: {{to_email}}, {{otp_code}}, {{user_name}}
+4. Copy Service ID, Template ID, Public Key
+
+5. Add to LostAndFoundApp/local.properties:
+
+   EMAILJS_SERVICE_ID=service_xxxxx
+   EMAILJS_TEMPLATE_ID=template_xxxxx
+   EMAILJS_PUBLIC_KEY=your_public_key
+
+6. Sync Gradle, rebuild, run.
+
+EmailJS is tried BEFORE Firestore if these keys are set.
+
+================================================================================
+FIRESTORE RULES (development)
+================================================================================
+
+Allow authenticated users to add to mail collection:
+
+  match /mail/{docId} {
+    allow create: if request.auth != null;
+    allow read, update, delete: if false;
+  }
+
+================================================================================
+TESTING
+================================================================================
+
+1. Register / login with dagmawitadeferes@gmail.com
+2. Claim an item
+3. Check inbox + spam
+4. If no email, check Logcat tag "EmailService" and Firestore → mail
+
+Logcat success:
+  "Queued email in Firestore/mail for ..."
 
 ================================================================================

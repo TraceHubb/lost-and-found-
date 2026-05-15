@@ -1,8 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun localProperty(key: String): String =
+    localProperties.getProperty(key, "").trim()
 
 android {
     namespace = "com.lostandfound"
@@ -16,6 +28,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val senderEmail = localProperty("SENDER_EMAIL")
+        val senderAppPassword = localProperty("SENDER_APP_PASSWORD").replace(" ", "")
+        buildConfigField("String", "SENDER_EMAIL", "\"$senderEmail\"")
+        buildConfigField("String", "SENDER_APP_PASSWORD", "\"$senderAppPassword\"")
+        buildConfigField("String", "EMAILJS_SERVICE_ID", "\"${localProperty("EMAILJS_SERVICE_ID")}\"")
+        buildConfigField("String", "EMAILJS_TEMPLATE_ID", "\"${localProperty("EMAILJS_TEMPLATE_ID")}\"")
+        buildConfigField("String", "EMAILJS_PUBLIC_KEY", "\"${localProperty("EMAILJS_PUBLIC_KEY")}\"")
     }
 
     buildTypes {
@@ -38,6 +58,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 

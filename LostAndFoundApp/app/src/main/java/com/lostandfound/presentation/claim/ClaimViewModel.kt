@@ -18,7 +18,13 @@ import kotlinx.coroutines.launch
 sealed class ClaimUiState {
     object Idle : ClaimUiState()
     object Loading : ClaimUiState()
-    data class OtpSent(val email: String, val expiresAt: Long) : ClaimUiState()
+    data class OtpSent(
+        val email: String,
+        val expiresAt: Long,
+        val otpCode: String,
+        val showOtpInApp: Boolean,
+        val emailNote: String? = null
+    ) : ClaimUiState()
     data class VerificationSuccess(val contactInfo: ContactInfo) : ClaimUiState()
     data class Error(val message: String, val errorType: ClaimErrorType) : ClaimUiState()
 }
@@ -62,7 +68,13 @@ class ClaimViewModel : ViewModel() {
                 is ClaimResult.Success -> {
                     val userEmail = AuthRepository.currentUser?.email ?: "your email"
                     val expiresAt = System.currentTimeMillis() + (5 * 60 * 1000)
-                    ClaimUiState.OtpSent(userEmail, expiresAt)
+                    ClaimUiState.OtpSent(
+                        email = userEmail,
+                        expiresAt = expiresAt,
+                        otpCode = result.data.otpCode,
+                        showOtpInApp = result.data.showOtpInApp,
+                        emailNote = result.data.emailNote
+                    )
                 }
                 is ClaimResult.Error -> {
                     ClaimUiState.Error(result.message, result.errorType)
@@ -121,7 +133,13 @@ class ClaimViewModel : ViewModel() {
                 is ClaimResult.Success -> {
                     val userEmail = AuthRepository.currentUser?.email ?: "your email"
                     val expiresAt = System.currentTimeMillis() + (5 * 60 * 1000)
-                    ClaimUiState.OtpSent(userEmail, expiresAt)
+                    ClaimUiState.OtpSent(
+                        email = userEmail,
+                        expiresAt = expiresAt,
+                        otpCode = result.data.otpCode,
+                        showOtpInApp = result.data.showOtpInApp,
+                        emailNote = result.data.emailNote
+                    )
                 }
                 is ClaimResult.Error -> {
                     ClaimUiState.Error(result.message, result.errorType)

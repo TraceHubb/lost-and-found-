@@ -12,9 +12,9 @@ import com.lostandfound.presentation.auth.RegisterScreen
 import com.lostandfound.presentation.claim.ContactInfoScreen
 import com.lostandfound.presentation.claim.OtpInputScreen
 import com.lostandfound.presentation.home.HomeScreen
+import com.lostandfound.presentation.items.ItemDetailScreen
 import com.lostandfound.presentation.items.ItemsListScreen
 import com.lostandfound.presentation.items.ReportItemScreen
-import com.lostandfound.presentation.items.ItemDetailScreen
 import com.lostandfound.presentation.matching.MatchingScreen
 import com.lostandfound.presentation.matches.MatchResultsScreen
 
