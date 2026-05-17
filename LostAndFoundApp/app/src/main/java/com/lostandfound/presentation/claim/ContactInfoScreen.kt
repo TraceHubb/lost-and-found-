@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.lostandfound.data.models.ContactInfo
+import com.lostandfound.presentation.components.CampusFindLogo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +35,13 @@ fun ContactInfoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Finder Contact Information") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CampusFindLogo(size = 32.dp, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Contact Information", fontWeight = FontWeight.Bold)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

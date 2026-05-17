@@ -126,23 +126,14 @@ fun CampusFindProfileIcon(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
-    val iconModifier = modifier
-        .size(44.dp)
-        .clip(androidx.compose.foundation.shape.CircleShape)
-        .background(BrandColors.LightPurple)
-    if (onClick != null) {
-        IconButton(onClick = onClick, modifier = Modifier.size(44.dp)) {
-            Box(modifier = iconModifier, contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Profile",
-                    tint = BrandColors.PrimaryPurple,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    } else {
-        Box(modifier = iconModifier, contentAlignment = Alignment.Center) {
+    val content: @Composable () -> Unit = {
+        Box(
+            modifier = modifier
+                .size(44.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(BrandColors.LightPurple),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 Icons.Default.Person,
                 contentDescription = "Profile",
@@ -150,5 +141,10 @@ fun CampusFindProfileIcon(
                 modifier = Modifier.size(24.dp)
             )
         }
+    }
+    if (onClick != null) {
+        IconButton(onClick = onClick, modifier = Modifier.size(44.dp)) { content() }
+    } else {
+        content()
     }
 }

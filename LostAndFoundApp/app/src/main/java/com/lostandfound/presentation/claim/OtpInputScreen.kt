@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.lostandfound.data.models.ClaimErrorType
 import kotlinx.coroutines.delay
+import com.lostandfound.presentation.components.CampusFindLogo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +61,13 @@ fun OtpInputScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Verify Your Claim") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CampusFindLogo(size = 32.dp, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Verify Your Claim", fontWeight = FontWeight.Bold)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

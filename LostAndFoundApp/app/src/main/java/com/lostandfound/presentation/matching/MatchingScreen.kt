@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.lostandfound.data.models.Item
+import com.lostandfound.presentation.components.CampusFindLogo
 
 // Modern color palette
 private val PrimaryPurple = Color(0xFF8B5CF6)
@@ -95,10 +96,12 @@ fun MatchingScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextDark
+                            tint = PrimaryPurple
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
+                    CampusFindLogo()
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "All Items",
                         style = MaterialTheme.typography.headlineSmall,

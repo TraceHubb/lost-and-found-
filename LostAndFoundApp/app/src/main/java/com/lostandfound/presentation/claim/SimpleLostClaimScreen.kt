@@ -61,37 +61,10 @@ fun SimpleLostClaimScreen(
             .fillMaxSize()
             .background(BackgroundWhite)
     ) {
-        // Header
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 2.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = PrimaryPurple
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "I Found This Item",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF1F2937),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
+        CampusFindScreenHeader(
+            title = "I Found This Item",
+            onBack = onBack
+        )
         
         if (isLoading) {
             Box(
