@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.lostandfound.data.models.Item
 import com.lostandfound.data.repositories.ItemsRepository
+import com.lostandfound.presentation.components.CampusFindLogo
 import kotlinx.coroutines.launch
 
 // Modern color palette
@@ -101,25 +102,7 @@ fun ItemDetailScreen(
                     )
                 }
                 
-                // Logo
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(PrimaryPurple, SecondaryPink)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "F",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                CampusFindLogo()
             }
         }
         

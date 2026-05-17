@@ -43,7 +43,7 @@ private val TextGray = Color(0xFF6B7280)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportLostItemScreen(
+private fun LegacyMultiStepReportLostItemScreen(
     onBack: () -> Unit,
     onSubmit: () -> Unit
 ) {
@@ -1182,7 +1182,7 @@ fun ReportItemScreen(
     type: com.lostandfound.data.models.ItemType,
     onDone: () -> Unit
 ) {
-    ReportLostItemScreen(
+    LegacyMultiStepReportLostItemScreen(
         onBack = onDone,
         onSubmit = onDone
     )

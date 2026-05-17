@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import com.lostandfound.data.models.Item
 import com.lostandfound.data.models.ItemType
 import com.lostandfound.data.repositories.ItemsRepository
+import com.lostandfound.presentation.components.CampusFindLogo
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -80,26 +81,7 @@ fun ItemsListScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(PrimaryPurple, SecondaryPink)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "F",
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    CampusFindLogo()
                     
                     IconButton(onClick = {}) {
                         Icon(

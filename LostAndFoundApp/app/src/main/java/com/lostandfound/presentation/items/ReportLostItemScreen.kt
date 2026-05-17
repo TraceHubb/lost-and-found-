@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.lostandfound.data.models.*
-import com.lostandfound.data.repositories.EnhancedItemsRepository
 import com.lostandfound.data.repositories.SimpleItemsRepository
 import com.lostandfound.data.repositories.AuthRepository
 import com.lostandfound.presentation.components.CampusFindScreenHeader
@@ -30,7 +29,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportFoundItemScreen(
+fun ReportLostItemScreen(
     onBack: () -> Unit,
     onSubmit: () -> Unit
 ) {
@@ -38,7 +37,7 @@ fun ReportFoundItemScreen(
     var itemName by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     var generalDescription by remember { mutableStateOf("") }
-    var locationFound by remember { mutableStateOf("") }
+    var locationLost by remember { mutableStateOf("") }
     var contactEmail by remember { mutableStateOf("") }
     var contactPhone by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -53,9 +52,6 @@ fun ReportFoundItemScreen(
     var question4 by remember { mutableStateOf("") }
     var answer4 by remember { mutableStateOf<Boolean?>(null) }
     
-    // Hidden details state - dynamic based on category
-    var hiddenDetailsMap by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    
     // UI state
     var isLoading by remember { mutableStateOf(false) }
     var isUploadingImage by remember { mutableStateOf(false) }
@@ -68,27 +64,12 @@ fun ReportFoundItemScreen(
     val SecondaryPink = Color(0xFFEC4899)
     val LightPurple = Color(0xFFF3E8FF)
     val BackgroundWhite = Color(0xFFFAFAFA)
-    val HiddenSectionColor = Color(0xFFFFF3CD) // Light yellow for hidden section
     
-    // Get category schema for dynamic form generation
-    val categorySchema = remember(category) {
-        if (category.isNotBlank()) {
-            CategoryHiddenDetailsSchema.getSchemaForCategory(category)
-        } else {
-            emptyMap()
-        }
-    }
-    
-    // Update hidden details when category changes
-    LaunchedEffect(category) {
-        if (category.isNotBlank()) {
-            val schema = CategoryHiddenDetailsSchema.getSchemaForCategory(category)
-            // Initialize hidden details map with empty values for all schema fields
-            hiddenDetailsMap = schema.keys.associateWith { hiddenDetailsMap[it] ?: "" }
-        } else {
-            hiddenDetailsMap = emptyMap()
-        }
-    }
+    // Categories for lost items
+    val categories = listOf(
+        "Electronics", "Clothing", "Accessories", "Books", "Keys", 
+        "Bags", "Documents", "Jewelry", "Sports Equipment", "Other"
+    )
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -103,7 +84,7 @@ fun ReportFoundItemScreen(
             .background(BackgroundWhite)
     ) {
         CampusFindScreenHeader(
-            title = "Report Found Item",
+            title = "Report Lost Item",
             onBack = onBack,
             trailing = {
                 IconButton(onClick = {}) {
@@ -116,9 +97,8 @@ fun ReportFoundItemScreen(
             }
         )
         
-        // Title
         Text(
-            text = "Report Found Item",
+            text = "Item details",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp)
@@ -169,7 +149,7 @@ fun ReportFoundItemScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Public Details",
+                                text = "Item Details",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = PrimaryPurple
@@ -177,19 +157,32 @@ fun ReportFoundItemScreen(
                         }
                         
                         Text(
-                            text = "These details will be visible to everyone browsing lost items",
+                            text = "Provide details about your lost item",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         
                         // Item Name
-                        FormField(
-                            icon = Icons.Default.Info,
-                            placeholder = "Item name (e.g., iPhone 13 Pro)",
+                        OutlinedTextField(
                             value = itemName,
                             onValueChange = { itemName = it },
-                            backgroundColor = LightPurple
+                            placeholder = { Text("Item name (e.g., iPhone 13 Pro)") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = LightPurple,
+                                focusedContainerColor = LightPurple,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         
@@ -232,7 +225,7 @@ fun ReportFoundItemScreen(
                                 onDismissRequest = { showCategoryDropdown = false },
                                 modifier = Modifier.fillMaxWidth(0.9f)
                             ) {
-                                CategoryHiddenDetailsSchema.getAllCategories().forEach { cat ->
+                                categories.forEach { cat ->
                                     DropdownMenuItem(
                                         text = { Text(cat) },
                                         onClick = {
@@ -246,43 +239,95 @@ fun ReportFoundItemScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         
                         // General Description
-                        FormField(
-                            icon = Icons.Default.Info,
-                            placeholder = "General description (e.g., Black smartphone with cracked screen)",
+                        OutlinedTextField(
                             value = generalDescription,
                             onValueChange = { generalDescription = it },
-                            backgroundColor = LightPurple,
+                            placeholder = { Text("General description (e.g., Black smartphone with cracked screen)") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = LightPurple,
+                                focusedContainerColor = LightPurple,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            ),
                             minLines = 2
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        // Location Found
-                        FormField(
-                            icon = Icons.Default.LocationOn,
-                            placeholder = "Location where found (e.g., Library 2nd floor)",
-                            value = locationFound,
-                            onValueChange = { locationFound = it },
-                            backgroundColor = LightPurple
+                        // Location Lost
+                        OutlinedTextField(
+                            value = locationLost,
+                            onValueChange = { locationLost = it },
+                            placeholder = { Text("Location where lost (e.g., Library 2nd floor)") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = LightPurple,
+                                focusedContainerColor = LightPurple,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         
                         // Contact Email
-                        FormField(
-                            icon = Icons.Default.Email,
-                            placeholder = "Contact email *",
+                        OutlinedTextField(
                             value = contactEmail,
                             onValueChange = { contactEmail = it },
-                            backgroundColor = LightPurple
+                            placeholder = { Text("Contact email *") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Email,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = LightPurple,
+                                focusedContainerColor = LightPurple,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         
                         // Contact Phone
-                        FormField(
-                            icon = Icons.Default.Phone,
-                            placeholder = "Contact phone *",
+                        OutlinedTextField(
                             value = contactPhone,
                             onValueChange = { contactPhone = it },
-                            backgroundColor = LightPurple
+                            placeholder = { Text("Contact phone *") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Phone,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = LightPurple,
+                                focusedContainerColor = LightPurple,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                     }
                 }
@@ -318,52 +363,104 @@ fun ReportFoundItemScreen(
                         }
                         
                         Text(
-                            text = "Create 4 yes/no questions about your found item (e.g., \"Is the case black?\"). Each answer must be Yes or No. The owner must answer all correctly to get your contact info.",
+                            text = "Create 4 yes/no questions about your lost item (e.g., \"Is the case black?\"). Each answer must be Yes or No. Finders must answer all correctly to get your contact info.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF92400E),
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         
                         // Question 1 with Answer
-                        FormField(
-                            icon = Icons.Default.Info,
-                            placeholder = "Question 1: e.g., Is the case black?",
+                        OutlinedTextField(
                             value = question1,
                             onValueChange = { question1 = it },
-                            backgroundColor = Color.White.copy(alpha = 0.7f)
+                            placeholder = { Text("Question 1: e.g., Is the case black?") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         ReportYesNoAnswerRow(1, answer1) { answer1 = it }
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        FormField(
-                            icon = Icons.Default.Info,
-                            placeholder = "Question 2: e.g., Does it have a logo?",
+                        OutlinedTextField(
                             value = question2,
                             onValueChange = { question2 = it },
-                            backgroundColor = Color.White.copy(alpha = 0.7f)
+                            placeholder = { Text("Question 2: e.g., Does it have a logo?") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         ReportYesNoAnswerRow(2, answer2) { answer2 = it }
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        FormField(
-                            icon = Icons.Default.Info,
-                            placeholder = "Question 3: e.g., Was it found in the library?",
+                        OutlinedTextField(
                             value = question3,
                             onValueChange = { question3 = it },
-                            backgroundColor = Color.White.copy(alpha = 0.7f)
+                            placeholder = { Text("Question 3: e.g., Was it lost in the library?") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         ReportYesNoAnswerRow(3, answer3) { answer3 = it }
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        FormField(
-                            icon = Icons.Default.Info,
-                            placeholder = "Question 4: e.g., Are there keys inside?",
+                        OutlinedTextField(
                             value = question4,
                             onValueChange = { question4 = it },
-                            backgroundColor = Color.White.copy(alpha = 0.7f)
+                            placeholder = { Text("Question 4: e.g., Are there keys inside?") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B4FA0)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFF6B4FA0)
+                            )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         ReportYesNoAnswerRow(4, answer4) { answer4 = it }
@@ -388,94 +485,6 @@ fun ReportFoundItemScreen(
                                 color = if (filledQuestions >= 4 && filledAnswers >= 4) Color(0xFF059669) else Color(0xFFD97706),
                                 fontWeight = FontWeight.Medium
                             )
-                        }
-                    }
-                }
-                
-                // HIDDEN DETAILS SECTION (only show if category is selected)
-                if (category.isNotBlank() && categorySchema.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = HiddenSectionColor),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = Color(0xFFD97706),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Hidden Verification Details",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFD97706)
-                                )
-                            }
-                            
-                            Text(
-                                text = "These details will be used to generate security questions for claimers. Only you and verified claimers will see these details.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF92400E),
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            
-                            Text(
-                                text = "⚠️ Please provide at least 3 specific details to enable secure verification.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFD97706),
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            
-                            // Dynamic hidden details fields based on category
-                            categorySchema.forEach { (fieldKey, fieldDescription) ->
-                                FormField(
-                                    icon = getIconForHiddenField(fieldKey),
-                                    placeholder = fieldDescription,
-                                    value = hiddenDetailsMap[fieldKey] ?: "",
-                                    onValueChange = { newValue ->
-                                        hiddenDetailsMap = hiddenDetailsMap.toMutableMap().apply {
-                                            put(fieldKey, newValue)
-                                        }
-                                    },
-                                    backgroundColor = Color.White.copy(alpha = 0.7f)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                            }
-                            
-                            // Hidden details count indicator
-                            val filledDetailsCount = hiddenDetailsMap.values.count { it.isNotBlank() }
-                            val minRequired = HiddenItemDetails.MINIMUM_REQUIRED_DETAILS
-                            
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(top = 8.dp)
-                            ) {
-                                Icon(
-                                    if (filledDetailsCount >= minRequired) Icons.Default.CheckCircle else Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = if (filledDetailsCount >= minRequired) Color(0xFF059669) else Color(0xFFD97706),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "$filledDetailsCount of $minRequired required details provided",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (filledDetailsCount >= minRequired) Color(0xFF059669) else Color(0xFFD97706),
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
                         }
                     }
                 }
@@ -572,8 +581,8 @@ fun ReportFoundItemScreen(
                                 errorMessage = "Please select item category"
                                 return@Button
                             }
-                            locationFound.isBlank() -> {
-                                errorMessage = "Please enter location where found"
+                            locationLost.isBlank() -> {
+                                errorMessage = "Please enter location where lost"
                                 return@Button
                             }
                             contactEmail.isBlank() -> {
@@ -604,13 +613,13 @@ fun ReportFoundItemScreen(
                                     isUploadingImage = true
                                 }
                                 
-                                // Create SimpleFoundItem
-                                val foundItem = SimpleFoundItem(
+                                // Create SimpleLostItem
+                                val lostItem = SimpleLostItem(
                                     reporterId = AuthRepository.currentUser?.uid ?: "",
                                     itemName = itemName,
                                     category = category,
                                     generalDescription = generalDescription,
-                                    locationFound = locationFound,
+                                    locationLost = locationLost,
                                     contactEmail = contactEmail,
                                     contactPhone = contactPhone,
                                     question1 = question1,
@@ -623,7 +632,7 @@ fun ReportFoundItemScreen(
                                     answer4 = answer4!!
                                 )
                                 
-                                SimpleItemsRepository.addFoundItem(foundItem, selectedImageUri, context)
+                                SimpleItemsRepository.addLostItem(lostItem, selectedImageUri, context)
                                 
                                 isUploadingImage = false
                                 onSubmit()
@@ -649,87 +658,12 @@ fun ReportFoundItemScreen(
                             modifier = Modifier.size(24.dp)
                         )
                     } else {
-                        Text("Post Found Item Report", style = MaterialTheme.typography.titleMedium)
+                        Text("Post Lost Item Report", style = MaterialTheme.typography.titleMedium)
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
-    }
-}
-
-@Composable
-fun FormField(
-    icon: ImageVector,
-    placeholder: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    backgroundColor: Color,
-    minLines: Int = 1
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        placeholder = { Text(placeholder) },
-        leadingIcon = {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = Color(0xFF6B4FA0)
-            )
-        },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            unfocusedContainerColor = backgroundColor,
-            focusedContainerColor = backgroundColor,
-            unfocusedBorderColor = Color.Transparent,
-            focusedBorderColor = Color(0xFF6B4FA0)
-        ),
-        minLines = minLines
-    )
-}
-
-fun getIconForHiddenField(fieldKey: String): ImageVector {
-    return when (fieldKey) {
-        "brand_model", "brand" -> Icons.Default.Info
-        "color", "color_material", "frame_color" -> Icons.Default.Star
-        "case_type", "case_cover", "case_accessories" -> Icons.Default.Phone
-        "screen_condition", "screen_size" -> Icons.Default.Phone
-        "wallpaper", "apps", "home_apps" -> Icons.Default.Star
-        "phone_digits", "carrier" -> Icons.Default.Phone
-        "card_types", "cash_amount", "id_type" -> Icons.Default.Star
-        "unique_features", "unique_markings", "unique_design" -> Icons.Default.Star
-        "keychain_details", "attached_items" -> Icons.Default.Star
-        "key_count", "key_types" -> Icons.Default.Star
-        "contents", "pockets_contents" -> Icons.Default.List
-        "pockets_compartments" -> Icons.Default.List
-        "wear_patterns", "wear_damage", "condition" -> Icons.Default.Warning
-        "zippers_closures" -> Icons.Default.Lock
-        "stickers_decorations" -> Icons.Default.Star
-        "keyboard_layout", "ports_connections" -> Icons.Default.Info
-        "case_sleeve" -> Icons.Default.Phone
-        "accessories" -> Icons.Default.Star
-        "type" -> Icons.Default.List
-        "band_material", "material" -> Icons.Default.Info
-        "face_design" -> Icons.Default.Star
-        "size", "size_fit", "size_capacity", "size_dimensions" -> Icons.Default.Info
-        "engravings" -> Icons.Default.Edit
-        "metal_type" -> Icons.Default.Star
-        "stone_details" -> Icons.Default.Star
-        "color_pattern" -> Icons.Default.Star
-        "bookmarks_notes" -> Icons.Default.Star
-        "title_author" -> Icons.Default.Info
-        "cover_type" -> Icons.Default.Info
-        "document_type" -> Icons.Default.Info
-        "issuing_authority" -> Icons.Default.Info
-        "expiration_info" -> Icons.Default.DateRange
-        "photo_description" -> Icons.Default.Star
-        "accompanying_items" -> Icons.Default.Star
-        "frame_type" -> Icons.Default.Info
-        "lens_type" -> Icons.Default.Info
-        "handle_material" -> Icons.Default.Info
-        else -> Icons.Default.Info
     }
 }

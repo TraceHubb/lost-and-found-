@@ -27,6 +27,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.lostandfound.data.repositories.ItemMatch
 import com.lostandfound.presentation.claim.ClaimViewModel
+import com.lostandfound.presentation.components.CampusFindLogo
 
 // Modern color palette
 private val PrimaryPurple = Color(0xFF8B5CF6)
@@ -92,25 +93,7 @@ fun MatchResultsScreen(
                         )
                     }
                     
-                    // Logo
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(PrimaryPurple, SecondaryPink)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "F",
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    CampusFindLogo()
                     
                     IconButton(onClick = {}) {
                         Icon(

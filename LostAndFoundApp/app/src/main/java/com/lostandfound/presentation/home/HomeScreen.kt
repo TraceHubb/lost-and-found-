@@ -23,6 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lostandfound.presentation.components.CampusFindBrandRow
+import com.lostandfound.presentation.components.CampusFindProfileIcon
 
 // Modern color palette
 private val PrimaryPurple = Color(0xFF8B5CF6)
@@ -49,12 +51,21 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showBrowseDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
     
     if (showBrowseDialog) {
         BrowseSelectionDialog(
             onDismiss = { showBrowseDialog = false },
             onBrowseLost = onBrowseLost,
             onBrowseFound = onBrowseFound
+        )
+    }
+    
+    if (showReportDialog) {
+        ReportSelectionDialog(
+            onDismiss = { showReportDialog = false },
+            onReportLost = onReportLost,
+            onReportFound = onReportFound
         )
     }
     
@@ -75,47 +86,8 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(PrimaryPurple, SecondaryPink)
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "F",
-                                    color = Color.White,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "CampusFind",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = TextDark,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(LightPurple),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = PrimaryPurple,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                        CampusFindBrandRow()
+                        CampusFindProfileIcon()
                     }
                 }
             }
@@ -154,7 +126,7 @@ fun HomeScreen(
                         icon = Icons.Default.Add,
                         label = "Report",
                         gradient = listOf(Color(0xFFEF4444), Color(0xFFF97316)),
-                        onClick = onReportLost  // Navigate directly to report screen
+                        onClick = { showReportDialog = true }  // Show report selection dialog
                     )
                     ModernQuickAction(
                         icon = Icons.Default.Star,
@@ -616,6 +588,40 @@ private fun BrowseSelectionDialog(
                 onBrowseFound()
             }) {
                 Text("Browse Found Items", color = PrimaryPurple)
+            }
+        }
+    )
+}
+
+@Composable
+private fun ReportSelectionDialog(
+    onDismiss: () -> Unit,
+    onReportLost: () -> Unit,
+    onReportFound: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Report Item") },
+        text = { Text("What would you like to report?") },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onDismiss()
+                    onReportLost()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEF4444)
+                )
+            ) {
+                Text("Report Lost Item")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = {
+                onDismiss()
+                onReportFound()
+            }) {
+                Text("Report Found Item", color = Color(0xFF10B981))
             }
         }
     )
