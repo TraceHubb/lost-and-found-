@@ -24,7 +24,6 @@ import com.lostandfound.data.models.*
 import com.lostandfound.data.repositories.SimpleItemsRepository
 import com.lostandfound.data.repositories.AuthRepository
 import com.lostandfound.presentation.components.CampusFindScreenHeader
-import com.lostandfound.presentation.components.ReportYesNoAnswerRow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,16 +41,6 @@ fun ReportLostItemScreen(
     var contactPhone by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     
-    // Verification questions and answers state
-    var question1 by remember { mutableStateOf("") }
-    var answer1 by remember { mutableStateOf<Boolean?>(null) }
-    var question2 by remember { mutableStateOf("") }
-    var answer2 by remember { mutableStateOf<Boolean?>(null) }
-    var question3 by remember { mutableStateOf("") }
-    var answer3 by remember { mutableStateOf<Boolean?>(null) }
-    var question4 by remember { mutableStateOf("") }
-    var answer4 by remember { mutableStateOf<Boolean?>(null) }
-    
     // UI state
     var isLoading by remember { mutableStateOf(false) }
     var isUploadingImage by remember { mutableStateOf(false) }
@@ -65,11 +54,8 @@ fun ReportLostItemScreen(
     val LightPurple = Color(0xFFF3E8FF)
     val BackgroundWhite = Color(0xFFFAFAFA)
     
-    // Categories for lost items
-    val categories = listOf(
-        "Electronics", "Clothing", "Accessories", "Books", "Keys", 
-        "Bags", "Documents", "Jewelry", "Sports Equipment", "Other"
-    )
+    // Use the same full category list across lost/found flows
+    val categories = CategoryHiddenDetailsSchema.getAllCategories()
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -332,163 +318,6 @@ fun ReportLostItemScreen(
                     }
                 }
                 
-                // VERIFICATION QUESTIONS SECTION
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3CD)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = Color(0xFFD97706),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Verification Questions",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD97706)
-                            )
-                        }
-                        
-                        Text(
-                            text = "Create 4 yes/no questions about your lost item (e.g., \"Is the case black?\"). Each answer must be Yes or No. Finders must answer all correctly to get your contact info.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF92400E),
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        
-                        // Question 1 with Answer
-                        OutlinedTextField(
-                            value = question1,
-                            onValueChange = { question1 = it },
-                            placeholder = { Text("Question 1: e.g., Is the case black?") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = Color(0xFF6B4FA0)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = Color(0xFF6B4FA0)
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ReportYesNoAnswerRow(1, answer1) { answer1 = it }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        OutlinedTextField(
-                            value = question2,
-                            onValueChange = { question2 = it },
-                            placeholder = { Text("Question 2: e.g., Does it have a logo?") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = Color(0xFF6B4FA0)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = Color(0xFF6B4FA0)
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ReportYesNoAnswerRow(2, answer2) { answer2 = it }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        OutlinedTextField(
-                            value = question3,
-                            onValueChange = { question3 = it },
-                            placeholder = { Text("Question 3: e.g., Was it lost in the library?") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = Color(0xFF6B4FA0)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = Color(0xFF6B4FA0)
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ReportYesNoAnswerRow(3, answer3) { answer3 = it }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        OutlinedTextField(
-                            value = question4,
-                            onValueChange = { question4 = it },
-                            placeholder = { Text("Question 4: e.g., Are there keys inside?") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = Color(0xFF6B4FA0)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                focusedContainerColor = Color.White.copy(alpha = 0.7f),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = Color(0xFF6B4FA0)
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ReportYesNoAnswerRow(4, answer4) { answer4 = it }
-                        
-                        val filledQuestions = listOf(question1, question2, question3, question4).count { it.isNotBlank() }
-                        val filledAnswers = listOf(answer1, answer2, answer3, answer4).count { YesNoAnswer.isValid(it) }
-                        
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 16.dp)
-                        ) {
-                            Icon(
-                                if (filledQuestions >= 4 && filledAnswers >= 4) Icons.Default.CheckCircle else Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = if (filledQuestions >= 4 && filledAnswers >= 4) Color(0xFF059669) else Color(0xFFD97706),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "$filledQuestions of 4 questions and $filledAnswers of 4 answers provided",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (filledQuestions >= 4 && filledAnswers >= 4) Color(0xFF059669) else Color(0xFFD97706),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-                
                 // IMAGE UPLOAD SECTION
                 OutlinedCard(
                     modifier = Modifier
@@ -593,14 +422,6 @@ fun ReportLostItemScreen(
                                 errorMessage = "Please enter contact phone"
                                 return@Button
                             }
-                            question1.isBlank() || question2.isBlank() || question3.isBlank() || question4.isBlank() -> {
-                                errorMessage = "Please fill all 4 verification questions"
-                                return@Button
-                            }
-                            !listOf(answer1, answer2, answer3, answer4).all { YesNoAnswer.isValid(it) } -> {
-                                errorMessage = "Please select Yes or No for all 4 verification answers"
-                                return@Button
-                            }
                         }
                         
                         isLoading = true
@@ -621,15 +442,7 @@ fun ReportLostItemScreen(
                                     generalDescription = generalDescription,
                                     locationLost = locationLost,
                                     contactEmail = contactEmail,
-                                    contactPhone = contactPhone,
-                                    question1 = question1,
-                                    answer1 = answer1!!,
-                                    question2 = question2,
-                                    answer2 = answer2!!,
-                                    question3 = question3,
-                                    answer3 = answer3!!,
-                                    question4 = question4,
-                                    answer4 = answer4!!
+                                    contactPhone = contactPhone
                                 )
                                 
                                 SimpleItemsRepository.addLostItem(lostItem, selectedImageUri, context)

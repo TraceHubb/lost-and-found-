@@ -7,9 +7,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lostandfound.data.repositories.AuthRepository
 
 @Composable
 fun ProfileScreen() {
+    val user = AuthRepository.currentUser
+    val email = user?.email ?: "Not signed in"
+    val fullName = user?.displayName?.takeIf { it.isNotBlank() } ?: "Unnamed user"
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -26,7 +31,9 @@ fun ProfileScreen() {
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("user@example.com")
+                Text(fullName)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(email)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("⭐ Rating: 4.5/5.0")
             }

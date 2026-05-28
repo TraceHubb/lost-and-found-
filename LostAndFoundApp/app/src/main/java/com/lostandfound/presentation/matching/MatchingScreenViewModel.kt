@@ -54,27 +54,22 @@ class MatchingScreenViewModel : ViewModel() {
                     
                     // Find matched pairs
                     val pairs = mutableListOf<ItemPair>()
-                    val usedFoundItems = mutableSetOf<String>()
                     
                     for (lostItem in lostItems) {
-                        // Find matches for this lost item
-                        val matches = MatchingRepository.findMatches(lostItem, allItems)
-                        
-                        // Get the best match that hasn't been used yet
-                        val bestMatch = matches.firstOrNull { match ->
-                            !usedFoundItems.contains(match.item.id)
-                        }
-                        
-                        if (bestMatch != null) {
+                        // Find matches for this lost item (only show suggestions > 50%)
+                        val matches = MatchingRepository.findMatches(lostItem, foundItems)
+                            .filter { it.matchScore > 50 }
+                            .take(3) // limit suggestions per lost item
+
+                        matches.forEach { match ->
                             pairs.add(
                                 ItemPair(
                                     lostItem = lostItem,
-                                    foundItem = bestMatch.item,
-                                    matchScore = bestMatch.matchScore,
-                                    matchReasons = bestMatch.matchReasons
+                                    foundItem = match.item,
+                                    matchScore = match.matchScore,
+                                    matchReasons = match.matchReasons
                                 )
                             )
-                            usedFoundItems.add(bestMatch.item.id)
                         }
                     }
                     

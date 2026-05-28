@@ -10,7 +10,6 @@ import com.lostandfound.data.models.SimpleItemStatus
 import com.lostandfound.data.models.ClaimStatus
 import com.lostandfound.data.services.ImageUploadService
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.tasks.await
@@ -21,6 +20,70 @@ object SimpleItemsRepository {
     private val foundItemsCollection = firestore.collection("simple_found_items")
     private val lostItemsCollection = firestore.collection("simple_lost_items")
     private val claimsCollection = firestore.collection("simple_claims")
+    
+    fun getReportedFoundItems(userId: String): Flow<List<SimpleFoundItem>> = callbackFlow {
+        val listener = foundItemsCollection
+            .whereEqualTo("reporterId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    runCatching { doc.toObject(SimpleFoundItem::class.java)?.copy(id = doc.id) }.getOrNull()
+                }.orEmpty()
+                
+                trySend(items.sortedByDescending { it.createdAt })
+            }
+        
+        awaitClose { listener.remove() }
+    }
+    
+    fun getReportedLostItems(userId: String): Flow<List<SimpleLostItem>> = callbackFlow {
+        val listener = lostItemsCollection
+            .whereEqualTo("reporterId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    runCatching { doc.toObject(SimpleLostItem::class.java)?.copy(id = doc.id) }.getOrNull()
+                }.orEmpty()
+                
+                trySend(items.sortedByDescending { it.createdAt })
+            }
+        
+        awaitClose { listener.remove() }
+    }
+    
+    fun getClaimsByClaimer(userId: String): Flow<List<SimpleClaim>> = callbackFlow {
+        val listener = claimsCollection
+            .whereEqualTo("claimerId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val claims = snapshot?.documents?.mapNotNull { doc ->
+                    runCatching {
+                        doc.toObject(SimpleClaim::class.java)?.copy(
+                            id = doc.id,
+                            status = runCatching {
+                                ClaimStatus.valueOf(doc.getString("status") ?: ClaimStatus.PENDING.name)
+                            }.getOrDefault(ClaimStatus.PENDING)
+                        )
+                    }.getOrNull()
+                }.orEmpty()
+                
+                trySend(claims.sortedByDescending { it.createdAt })
+            }
+        
+        awaitClose { listener.remove() }
+    }
     
     /**
      * Add a new found item with 4 verification questions

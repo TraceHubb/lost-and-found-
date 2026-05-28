@@ -144,3 +144,24 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+// Prevent OneDrive placeholder/snapshot corruption in generated outputs.
+tasks.matching { task ->
+    task.name == "generateDebugBuildConfig" ||
+        task.name == "processDebugGoogleServices" ||
+        task.name == "packageDebugResources"
+}.configureEach {
+    doFirst {
+        when (name) {
+            "generateDebugBuildConfig" -> {
+                delete(layout.buildDirectory.dir("generated/source/buildConfig/debug"))
+            }
+            "processDebugGoogleServices" -> {
+                delete(layout.buildDirectory.dir("generated/res/processDebugGoogleServices"))
+            }
+            "packageDebugResources" -> {
+                delete(layout.buildDirectory.dir("intermediates/apk/debug"))
+            }
+        }
+    }
+}

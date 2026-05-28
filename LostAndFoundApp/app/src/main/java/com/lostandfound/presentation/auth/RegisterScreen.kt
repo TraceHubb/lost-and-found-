@@ -16,6 +16,7 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -37,6 +38,14 @@ fun RegisterScreen(
             style = MaterialTheme.typography.titleLarge
         )
         Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Full name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = email,
@@ -80,6 +89,9 @@ fun RegisterScreen(
                 scope.launch {
                     try {
                         when {
+                            fullName.isBlank() -> {
+                                errorMessage = "Full name is required."
+                            }
                             email.isBlank() || password.isBlank() -> {
                                 errorMessage = "Email and password are required."
                             }
@@ -90,7 +102,7 @@ fun RegisterScreen(
                                 errorMessage = "Passwords do not match."
                             }
                             else -> {
-                                AuthRepository.register(email, password)
+                                AuthRepository.register(email, password, fullName.trim())
                                 onRegisterSuccess()
                             }
                         }

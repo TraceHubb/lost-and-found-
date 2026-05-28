@@ -44,6 +44,7 @@ fun HomeScreen(
     onBrowseLost: () -> Unit,
     onBrowseFound: () -> Unit,
     onNavigateToMatching: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     onNavigateToItemsReady: () -> Unit,
     onNavigateToItemsInReview: () -> Unit,
     onLogout: () -> Unit,
@@ -100,9 +101,8 @@ fun HomeScreen(
         item {
             // Items Reunited Card with Graph
             ItemsReunitedCard(
-                totalItems = state.notificationCounts.itemsReady + 
-                            state.notificationCounts.matchingResults + 
-                            state.notificationCounts.itemsInReview
+                totalItems = state.reunitedTotal,
+                monthlyData = state.reunitedByMonth
             )
         }
         
@@ -130,7 +130,7 @@ fun HomeScreen(
                     )
                     ModernQuickAction(
                         icon = Icons.Default.Star,
-                        label = "Matching",
+                        label = "Suggestions",
                         gradient = listOf(Color(0xFFF59E0B), Color(0xFFFBBF24)),
                         onClick = onNavigateToMatching
                     )
@@ -141,10 +141,10 @@ fun HomeScreen(
                         onClick = { showBrowseDialog = true }
                     )
                     ModernQuickAction(
-                        icon = Icons.Default.Check,
-                        label = "Tasks",
+                        icon = Icons.Default.DateRange,
+                        label = "History",
                         gradient = listOf(Color(0xFF10B981), Color(0xFF34D399)),
-                        onClick = {}
+                        onClick = onNavigateToHistory
                     )
                 }
             }
@@ -169,10 +169,10 @@ fun HomeScreen(
         item {
             // Statistics Cards Grid
             StatisticsGrid(
-                lostItems = state.notificationCounts.itemsReady,
-                foundItems = state.notificationCounts.matchingResults,
-                returnedItems = state.notificationCounts.itemsInReview,
-                activeUsers = 32841,
+                lostItems = state.overviewLostItems,
+                foundItems = state.overviewFoundItems,
+                returnedItems = state.overviewReturnedItems,
+                activeUsers = state.overviewActiveUsers,
                 onLostItemsClick = onNavigateToItemsReady,
                 onFoundItemsClick = onNavigateToMatching,
                 onReturnedItemsClick = onNavigateToItemsInReview,
@@ -196,7 +196,17 @@ fun HomeScreen(
 }
 
 @Composable
-fun ItemsReunitedCard(totalItems: Int) {
+fun ItemsReunitedCard(
+    totalItems: Int,
+    monthlyData: List<Pair<String, Int>>
+) {
+    val data = if (monthlyData.isNotEmpty()) monthlyData else listOf(
+        "Jan" to 0, "Feb" to 0, "Mar" to 0, "Apr" to 0, "May" to 0
+    )
+    val prev = data.dropLast(1).sumOf { it.second }
+    val current = data.takeLast(1).sumOf { it.second }
+    val growthPct = if (prev > 0) ((current - prev) * 100.0 / prev) else 0.0
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -239,15 +249,15 @@ fun ItemsReunitedCard(totalItems: Int) {
             
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Default.KeyboardArrowUp,
+                    if (growthPct >= 0) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = GreenSuccess,
+                    tint = if (growthPct >= 0) GreenSuccess else Color(0xFFEF4444),
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "12.5%",
-                    color = GreenSuccess,
+                    text = "${String.format("%.1f", kotlin.math.abs(growthPct))}%",
+                    color = if (growthPct >= 0) GreenSuccess else Color(0xFFEF4444),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
@@ -283,11 +293,12 @@ fun ItemsReunitedCard(totalItems: Int) {
                         .align(Alignment.BottomCenter),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    listOf("Jan", "Feb", "Mar", "Apr", "May").forEach { month ->
+                    data.forEach { (month, count) ->
                         Text(
-                            text = month,
+                            text = "$month\n$count",
                             color = TextGray,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

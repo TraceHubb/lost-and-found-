@@ -173,17 +173,8 @@ fun MatchResultsScreen(
                             sourceItem = state.sourceItem,
                             onViewDetails = { onViewDetails(match.item.id) },
                             onClaimItem = {
-                                // Navigate to OTP input screen
-                                // matchId will be constructed from sourceItem.id and match.item.id
-                                val matchId = "${state.sourceItem?.id}_${match.item.id}"
-                                val lostItemId = state.sourceItem?.id ?: ""
-                                val foundItemId = match.item.id
-                                
-                                // Initiate claim process
-                                claimViewModel.initiateClaim(matchId, lostItemId, foundItemId)
-                                
-                                // Navigate to OTP input screen
-                                navController.navigate("otp_input/$matchId/$lostItemId/$foundItemId")
+                                // OTP flow removed. This screen is legacy; claims now happen via the
+                                // 4 yes/no verification questions in the Simple Claim flow.
                             },
                             onNotMine = { /* TODO */ }
                         )

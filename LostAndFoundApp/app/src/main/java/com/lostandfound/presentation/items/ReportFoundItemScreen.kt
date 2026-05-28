@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.lostandfound.data.models.*
-import com.lostandfound.data.repositories.EnhancedItemsRepository
 import com.lostandfound.data.repositories.SimpleItemsRepository
 import com.lostandfound.data.repositories.AuthRepository
 import com.lostandfound.presentation.components.CampusFindScreenHeader
@@ -53,9 +52,6 @@ fun ReportFoundItemScreen(
     var question4 by remember { mutableStateOf("") }
     var answer4 by remember { mutableStateOf<Boolean?>(null) }
     
-    // Hidden details state - dynamic based on category
-    var hiddenDetailsMap by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    
     // UI state
     var isLoading by remember { mutableStateOf(false) }
     var isUploadingImage by remember { mutableStateOf(false) }
@@ -65,29 +61,11 @@ fun ReportFoundItemScreen(
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val PrimaryPurple = Color(0xFF8B5CF6)
-    val SecondaryPink = Color(0xFFEC4899)
     val LightPurple = Color(0xFFF3E8FF)
     val BackgroundWhite = Color(0xFFFAFAFA)
-    val HiddenSectionColor = Color(0xFFFFF3CD) // Light yellow for hidden section
-    
-    // Get category schema for dynamic form generation
-    val categorySchema = remember(category) {
-        if (category.isNotBlank()) {
-            CategoryHiddenDetailsSchema.getSchemaForCategory(category)
-        } else {
-            emptyMap()
-        }
-    }
-    
-    // Update hidden details when category changes
-    LaunchedEffect(category) {
-        if (category.isNotBlank()) {
-            val schema = CategoryHiddenDetailsSchema.getSchemaForCategory(category)
-            // Initialize hidden details map with empty values for all schema fields
-            hiddenDetailsMap = schema.keys.associateWith { hiddenDetailsMap[it] ?: "" }
-        } else {
-            hiddenDetailsMap = emptyMap()
-        }
+    val categories = CategoryHiddenDetailsSchema.getAllCategories()
+    val suggestedQuestions = remember(category, itemName, locationFound) {
+        buildSuggestedVerificationQuestions(category, itemName, locationFound)
     }
     
     // Image picker launcher
@@ -232,7 +210,7 @@ fun ReportFoundItemScreen(
                                 onDismissRequest = { showCategoryDropdown = false },
                                 modifier = Modifier.fillMaxWidth(0.9f)
                             ) {
-                                CategoryHiddenDetailsSchema.getAllCategories().forEach { cat ->
+                                categories.forEach { cat ->
                                     DropdownMenuItem(
                                         text = { Text(cat) },
                                         onClick = {
@@ -323,11 +301,19 @@ fun ReportFoundItemScreen(
                             color = Color(0xFF92400E),
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
+
+                        Text(
+                            text = "Suggestions appear inside each question field based on category. You can repeat a question or write a different one.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF92400E),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
                         
                         // Question 1 with Answer
                         FormField(
                             icon = Icons.Default.Info,
-                            placeholder = "Question 1: e.g., Is the case black?",
+                            placeholder = "Question 1: ${suggestedQuestions.getOrElse(0) { "Is this the correct item?" }}",
                             value = question1,
                             onValueChange = { question1 = it },
                             backgroundColor = Color.White.copy(alpha = 0.7f)
@@ -338,7 +324,7 @@ fun ReportFoundItemScreen(
                         
                         FormField(
                             icon = Icons.Default.Info,
-                            placeholder = "Question 2: e.g., Does it have a logo?",
+                            placeholder = "Question 2: ${suggestedQuestions.getOrElse(1) { "Does it have a logo or unique mark?" }}",
                             value = question2,
                             onValueChange = { question2 = it },
                             backgroundColor = Color.White.copy(alpha = 0.7f)
@@ -349,7 +335,7 @@ fun ReportFoundItemScreen(
                         
                         FormField(
                             icon = Icons.Default.Info,
-                            placeholder = "Question 3: e.g., Was it found in the library?",
+                            placeholder = "Question 3: ${suggestedQuestions.getOrElse(2) { "Was it found in this location?" }}",
                             value = question3,
                             onValueChange = { question3 = it },
                             backgroundColor = Color.White.copy(alpha = 0.7f)
@@ -360,7 +346,7 @@ fun ReportFoundItemScreen(
                         
                         FormField(
                             icon = Icons.Default.Info,
-                            placeholder = "Question 4: e.g., Are there keys inside?",
+                            placeholder = "Question 4: ${suggestedQuestions.getOrElse(3) { "Does it have a specific detail only owner knows?" }}",
                             value = question4,
                             onValueChange = { question4 = it },
                             backgroundColor = Color.White.copy(alpha = 0.7f)
@@ -388,94 +374,6 @@ fun ReportFoundItemScreen(
                                 color = if (filledQuestions >= 4 && filledAnswers >= 4) Color(0xFF059669) else Color(0xFFD97706),
                                 fontWeight = FontWeight.Medium
                             )
-                        }
-                    }
-                }
-                
-                // HIDDEN DETAILS SECTION (only show if category is selected)
-                if (category.isNotBlank() && categorySchema.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = HiddenSectionColor),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = Color(0xFFD97706),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Hidden Verification Details",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFD97706)
-                                )
-                            }
-                            
-                            Text(
-                                text = "These details will be used to generate security questions for claimers. Only you and verified claimers will see these details.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF92400E),
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            
-                            Text(
-                                text = "⚠️ Please provide at least 3 specific details to enable secure verification.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFD97706),
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            
-                            // Dynamic hidden details fields based on category
-                            categorySchema.forEach { (fieldKey, fieldDescription) ->
-                                FormField(
-                                    icon = getIconForHiddenField(fieldKey),
-                                    placeholder = fieldDescription,
-                                    value = hiddenDetailsMap[fieldKey] ?: "",
-                                    onValueChange = { newValue ->
-                                        hiddenDetailsMap = hiddenDetailsMap.toMutableMap().apply {
-                                            put(fieldKey, newValue)
-                                        }
-                                    },
-                                    backgroundColor = Color.White.copy(alpha = 0.7f)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                            }
-                            
-                            // Hidden details count indicator
-                            val filledDetailsCount = hiddenDetailsMap.values.count { it.isNotBlank() }
-                            val minRequired = HiddenItemDetails.MINIMUM_REQUIRED_DETAILS
-                            
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(top = 8.dp)
-                            ) {
-                                Icon(
-                                    if (filledDetailsCount >= minRequired) Icons.Default.CheckCircle else Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = if (filledDetailsCount >= minRequired) Color(0xFF059669) else Color(0xFFD97706),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "$filledDetailsCount of $minRequired required details provided",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (filledDetailsCount >= minRequired) Color(0xFF059669) else Color(0xFFD97706),
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
                         }
                     }
                 }
@@ -691,45 +589,118 @@ fun FormField(
     )
 }
 
-fun getIconForHiddenField(fieldKey: String): ImageVector {
-    return when (fieldKey) {
-        "brand_model", "brand" -> Icons.Default.Info
-        "color", "color_material", "frame_color" -> Icons.Default.Star
-        "case_type", "case_cover", "case_accessories" -> Icons.Default.Phone
-        "screen_condition", "screen_size" -> Icons.Default.Phone
-        "wallpaper", "apps", "home_apps" -> Icons.Default.Star
-        "phone_digits", "carrier" -> Icons.Default.Phone
-        "card_types", "cash_amount", "id_type" -> Icons.Default.Star
-        "unique_features", "unique_markings", "unique_design" -> Icons.Default.Star
-        "keychain_details", "attached_items" -> Icons.Default.Star
-        "key_count", "key_types" -> Icons.Default.Star
-        "contents", "pockets_contents" -> Icons.Default.List
-        "pockets_compartments" -> Icons.Default.List
-        "wear_patterns", "wear_damage", "condition" -> Icons.Default.Warning
-        "zippers_closures" -> Icons.Default.Lock
-        "stickers_decorations" -> Icons.Default.Star
-        "keyboard_layout", "ports_connections" -> Icons.Default.Info
-        "case_sleeve" -> Icons.Default.Phone
-        "accessories" -> Icons.Default.Star
-        "type" -> Icons.Default.List
-        "band_material", "material" -> Icons.Default.Info
-        "face_design" -> Icons.Default.Star
-        "size", "size_fit", "size_capacity", "size_dimensions" -> Icons.Default.Info
-        "engravings" -> Icons.Default.Edit
-        "metal_type" -> Icons.Default.Star
-        "stone_details" -> Icons.Default.Star
-        "color_pattern" -> Icons.Default.Star
-        "bookmarks_notes" -> Icons.Default.Star
-        "title_author" -> Icons.Default.Info
-        "cover_type" -> Icons.Default.Info
-        "document_type" -> Icons.Default.Info
-        "issuing_authority" -> Icons.Default.Info
-        "expiration_info" -> Icons.Default.DateRange
-        "photo_description" -> Icons.Default.Star
-        "accompanying_items" -> Icons.Default.Star
-        "frame_type" -> Icons.Default.Info
-        "lens_type" -> Icons.Default.Info
-        "handle_material" -> Icons.Default.Info
-        else -> Icons.Default.Info
+private fun buildSuggestedVerificationQuestions(
+    category: String,
+    itemName: String,
+    locationFound: String
+): List<String> {
+    val itemHint = itemName.ifBlank { "the item" }
+    val locationHint = locationFound.ifBlank { "the location where it was found" }
+    val baseQuestions = listOf(
+        "Is this $itemHint?",
+        "Was it found near $locationHint?",
+        "Does it have a visible logo or brand?",
+        "Does it have a unique scratch, mark, or sticker?"
+    )
+
+    val categorySpecific = when (category.trim().uppercase()) {
+        "PHONE" -> listOf(
+            "Is the phone in a case?",
+            "Is the screen cracked or scratched?",
+            "Is the brand/model exactly what the owner says?",
+            "Does it have a visible wallpaper or lock-screen feature?"
+        )
+        "WALLET" -> listOf(
+            "Does it contain an ID or specific card type?",
+            "Is the wallet material leather?",
+            "Is there cash inside (yes/no)?",
+            "Does it have a unique wear mark or stitching pattern?"
+        )
+        "KEYS" -> listOf(
+            "Is there a keychain attached?",
+            "Are there multiple keys on the ring?",
+            "Is one key noticeably larger than the others?",
+            "Is there a remote/fob attached?"
+        )
+        "BAG/BACKPACK", "BAG", "BACKPACK" -> listOf(
+            "Does it have multiple zip compartments?",
+            "Is there a laptop section inside?",
+            "Is the bag color dark (black/navy)?",
+            "Are there items inside one of the pockets?"
+        )
+        "LAPTOP" -> listOf(
+            "Is it a specific brand/model?",
+            "Is there a sticker or mark on the lid?",
+            "Is the screen size what the owner says?",
+            "Is it inside a sleeve/case?"
+        )
+        "TABLET" -> listOf(
+            "Does it have a cover/case?",
+            "Is the tablet color exactly as described?",
+            "Is there any crack on the screen?",
+            "Is there a stylus or accessory with it?"
+        )
+        "HEADPHONES" -> listOf(
+            "Are they wireless headphones?",
+            "Is there a charging case included?",
+            "Is the color black/dark?",
+            "Do they have a visible logo/brand mark?"
+        )
+        "WATCH" -> listOf(
+            "Is it a digital/smart watch?",
+            "Is the strap color/material as described?",
+            "Is there any scratch on the watch face?",
+            "Does it have a unique buckle/strap detail?"
+        )
+        "JEWELRY" -> listOf(
+            "Is it silver/gold colored?",
+            "Does it have any engraving?",
+            "Is there a stone/gem attached?",
+            "Is the size/fit exactly as described?"
+        )
+        "CLOTHING" -> listOf(
+            "Is the size label what the owner says?",
+            "Is there a visible brand logo/tag?",
+            "Is the main color exactly as described?",
+            "Does it have a unique stain/mark?"
+        )
+        "BOOKS" -> listOf(
+            "Is the title/author exactly as described?",
+            "Is it hardcover?",
+            "Are there notes/highlights inside?",
+            "Is there anything kept inside the book?"
+        )
+        "ID/DOCUMENTS", "ID", "DOCUMENTS" -> listOf(
+            "Is the name visible on the document/card?",
+            "Does it include a photo ID?",
+            "Was it inside a folder or holder?",
+            "Is the document type exactly what the owner says?"
+        )
+        "GLASSES" -> listOf(
+            "Are the frames metal?",
+            "Is there a glasses case included?",
+            "Is there a visible brand on the frame?",
+            "Are the lenses prescription?"
+        )
+        "UMBRELLA" -> listOf(
+            "Is it a foldable umbrella?",
+            "Is the handle shape/material specific?",
+            "Is the color/pattern exactly as described?",
+            "Does it have any noticeable damage?"
+        )
+        "WATER BOTTLE", "WATER_BOTTLE" -> listOf(
+            "Is the bottle metal/stainless steel?",
+            "Does it have stickers or marks on it?",
+            "Is the color exactly as described?",
+            "Is the size/capacity what the owner says?"
+        )
+        else -> listOf(
+            "Does it have initials, engraving, or a name mark?",
+            "Is there a unique feature only the owner would know?",
+            "Was it found with another item?",
+            "Is the color/material exactly as described?"
+        )
     }
+
+    return (categorySpecific + baseQuestions).distinct()
 }
