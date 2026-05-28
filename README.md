@@ -1,4 +1,11 @@
 # CampusFind - Lost & Found App
+# contributers
+1. Aman Baye(Aman-OG)
+2. Amanuel nebey(Aman-2121)
+3. Betelehem Beshahe(frehi582)
+4. Bruktawit Zelalem(Bruktawit-t)
+5. Dagmawit adeferes(Kalddass)
+6. Kendie Abera(kendieabera)
 
 A modern Android application built with Jetpack Compose that helps campus communities reunite lost items with their owners through a secure verification system.
 
