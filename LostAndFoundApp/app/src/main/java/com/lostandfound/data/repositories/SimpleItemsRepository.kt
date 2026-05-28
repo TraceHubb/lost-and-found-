@@ -84,6 +84,48 @@ object SimpleItemsRepository {
         
         awaitClose { listener.remove() }
     }
+
+    /**
+     * Observe all lost items (any status) so UIs can react to claim status changes in real time.
+     */
+    fun observeLostItems(): Flow<List<SimpleLostItem>> = callbackFlow {
+        val listener = lostItemsCollection
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    runCatching { doc.toObject(SimpleLostItem::class.java)?.copy(id = doc.id) }.getOrNull()
+                }.orEmpty()
+
+                trySend(items.sortedByDescending { it.createdAt })
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Observe all found items (any status) so UIs can react to claim status changes in real time.
+     */
+    fun observeFoundItems(): Flow<List<SimpleFoundItem>> = callbackFlow {
+        val listener = foundItemsCollection
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    runCatching { doc.toObject(SimpleFoundItem::class.java)?.copy(id = doc.id) }.getOrNull()
+                }.orEmpty()
+
+                trySend(items.sortedByDescending { it.createdAt })
+            }
+
+        awaitClose { listener.remove() }
+    }
     
     /**
      * Add a new found item with 4 verification questions

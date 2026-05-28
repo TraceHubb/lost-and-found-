@@ -137,8 +137,9 @@ fun AppNavGraph(
         composable("simple_lost_items") {
             SimpleLostItemsListScreen(
                 onBack = { navController.popBackStack() },
-                onItemClick = { itemId ->
-                    navController.navigate("simple_lost_claim/$itemId")
+                onItemClick = {
+                    // Browsing a lost item should go straight to reporting it as found.
+                    navController.navigate("report_found")
                 }
             )
         }

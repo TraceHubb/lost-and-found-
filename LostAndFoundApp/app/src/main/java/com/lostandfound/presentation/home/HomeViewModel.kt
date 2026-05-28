@@ -5,14 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.lostandfound.data.firebase.FirebaseProviders
 import com.lostandfound.data.models.ItemStatus
 import com.lostandfound.data.models.ItemType
+import com.lostandfound.data.models.SimpleFoundItem
+import com.lostandfound.data.models.SimpleLostItem
+import com.lostandfound.data.models.SimpleItemStatus
 import com.lostandfound.data.repositories.AuthRepository
-import com.lostandfound.data.repositories.ItemsRepository
-import com.lostandfound.data.repositories.MatchingRepository
+import com.lostandfound.data.repositories.SimpleItemsRepository
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -40,85 +44,54 @@ class HomeViewModel : ViewModel() {
     val state: StateFlow<HomeScreenState> = _state
     
     init {
-        loadNotificationCounts()
+        observeHomeCounts()
     }
     
-    fun loadNotificationCounts() {
+    private fun observeHomeCounts() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-            
-            try {
-                val currentUserId = AuthRepository.currentUser?.uid
-                
-                if (currentUserId != null) {
-                    // Get all items
-                    val allItems = ItemsRepository.getAllItems()
-                    val activeUsersCount = runCatching {
-                        FirebaseProviders.firestore.collection("users").get().await().size()
-                    }.getOrDefault(0)
-                    
-                    // Items Ready: User's items with ACTIVE status
-                    val itemsReady = allItems.count { item ->
-                        item.userId == currentUserId && item.status == ItemStatus.ACTIVE
-                    }
-                    
-                    // Matching Results: Count matches for all user's lost items
-                    val userLostItems = allItems.filter { 
-                        it.userId == currentUserId && it.type == ItemType.LOST 
-                    }
-                    
-                    var totalMatches = 0
-                    userLostItems.forEach { lostItem ->
-                        val matches = MatchingRepository.findMatches(lostItem, allItems)
-                        totalMatches += matches.size
-                    }
-                    
-                    // Items in Review: User's items with RECOVERED or CLAIMED status
-                    val itemsInReview = allItems.count { item ->
-                        item.userId == currentUserId && 
-                        (item.status == ItemStatus.RECOVERED || item.status == ItemStatus.CLAIMED)
-                    }
 
-                    // Real overview numbers (global)
-                    val overviewLostItems = allItems.count { it.type == ItemType.LOST }
-                    val overviewFoundItems = allItems.count { it.type == ItemType.FOUND }
-                    val overviewReturnedItems = allItems.count {
-                        it.status == ItemStatus.RECOVERED || it.status == ItemStatus.CLAIMED
-                    }
-                    val reunitedByMonth = computeReunitedByMonth(allItems)
-                    
-                    _state.update { 
-                        it.copy(
-                            notificationCounts = NotificationCounts(
-                                itemsReady = itemsReady,
-                                matchingResults = totalMatches,
-                                itemsInReview = itemsInReview
-                            ),
-                            overviewLostItems = overviewLostItems,
-                            overviewFoundItems = overviewFoundItems,
-                            overviewReturnedItems = overviewReturnedItems,
-                            overviewActiveUsers = activeUsersCount,
-                            reunitedTotal = overviewReturnedItems,
-                            reunitedByMonth = reunitedByMonth,
-                            isLoading = false
-                        )
-                    }
-                } else {
-                    // User not logged in
-                    _state.update { 
-                        it.copy(
-                            notificationCounts = NotificationCounts(),
-                            isLoading = false
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                // On error, keep default counts
-                _state.update { 
-                    it.copy(
-                        notificationCounts = NotificationCounts(),
-                        isLoading = false
-                    )
+            val currentUserId = AuthRepository.currentUser?.uid
+            if (currentUserId == null) {
+                _state.update { it.copy(notificationCounts = NotificationCounts(), isLoading = false) }
+                return@launch
+            }
+
+            // Active users can be fetched once (the main refresh requirement is graph counts).
+            val activeUsersCount = runCatching {
+                FirebaseProviders.firestore.collection("users").get().await().size()
+            }.getOrDefault(0)
+
+            // Observe simple collections (your claim flow updates these in real time).
+            combine(
+                SimpleItemsRepository.observeLostItems(),
+                SimpleItemsRepository.observeFoundItems()
+            ) { lostItems, foundItems ->
+                val overviewLostItems = lostItems.size
+                val overviewFoundItems = foundItems.size
+
+                val returnedLost = lostItems.count { it.status == SimpleItemStatus.CLAIMED }
+                val returnedFound = foundItems.count { it.status == SimpleItemStatus.CLAIMED }
+                val overviewReturnedItems = returnedLost + returnedFound
+
+                val reunitedByMonth = computeReunitedByMonthSimple(lostItems, foundItems)
+
+                // Keep notificationCounts compatible, but focus on overview + graph.
+                HomeScreenState(
+                    notificationCounts = NotificationCounts(),
+                    overviewLostItems = overviewLostItems,
+                    overviewFoundItems = overviewFoundItems,
+                    overviewReturnedItems = overviewReturnedItems,
+                    overviewActiveUsers = activeUsersCount,
+                    reunitedTotal = overviewReturnedItems,
+                    reunitedByMonth = reunitedByMonth,
+                    dismissedNotifications = emptySet(),
+                    isLoading = false
+                )
+            }.collectLatest { newState ->
+                // Preserve dismissedNotifications (if any) by merging.
+                _state.update { old ->
+                    newState.copy(dismissedNotifications = old.dismissedNotifications)
                 }
             }
         }
@@ -132,7 +105,10 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    private fun computeReunitedByMonth(allItems: List<com.lostandfound.data.models.Item>): List<Pair<String, Int>> {
+    private fun computeReunitedByMonthSimple(
+        lostItems: List<SimpleLostItem>,
+        foundItems: List<SimpleFoundItem>
+    ): List<Pair<String, Int>> {
         val now = Calendar.getInstance()
         val monthBuckets = (4 downTo 0).map { offset ->
             val cal = (now.clone() as Calendar).apply { add(Calendar.MONTH, -offset) }
@@ -143,14 +119,17 @@ class HomeViewModel : ViewModel() {
         }
 
         return monthBuckets.map { (label, monthYear) ->
-            val count = allItems.count { item ->
-                val cal = Calendar.getInstance().apply {
-                    timeInMillis = if (item.datePosted > 0) item.datePosted else item.date
-                }
-                (item.status == ItemStatus.RECOVERED || item.status == ItemStatus.CLAIMED) &&
-                    cal.get(Calendar.MONTH) == monthYear.first &&
-                    cal.get(Calendar.YEAR) == monthYear.second
+            val countLost = lostItems.count { lost ->
+                if (lost.status != SimpleItemStatus.CLAIMED) return@count false
+                val cal = Calendar.getInstance().apply { timeInMillis = lost.createdAt }
+                cal.get(Calendar.MONTH) == monthYear.first && cal.get(Calendar.YEAR) == monthYear.second
             }
+            val countFound = foundItems.count { found ->
+                if (found.status != SimpleItemStatus.CLAIMED) return@count false
+                val cal = Calendar.getInstance().apply { timeInMillis = found.createdAt }
+                cal.get(Calendar.MONTH) == monthYear.first && cal.get(Calendar.YEAR) == monthYear.second
+            }
+            val count = countLost + countFound
             label to count
         }
     }
