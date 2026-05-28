@@ -5,7 +5,7 @@
 3. Betelehem Beshahe(frehi582)
 4. Bruktawit Zelalem(Bruktawit-t)
 5. Dagmawit adeferes(Kalddass)
-6. Kendie Abera(kendieabera)
+6. Kindie Abera(kindieabera)
 
 A modern Android application built with Jetpack Compose that helps campus communities reunite lost items with their owners through a secure verification system.
 
