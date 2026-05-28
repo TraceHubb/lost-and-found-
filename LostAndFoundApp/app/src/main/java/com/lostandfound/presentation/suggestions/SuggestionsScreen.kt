@@ -38,10 +38,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.lostandfound.presentation.components.CampusFindLogo
 
 private val PrimaryPurple = Color(0xFF8B5CF6)
@@ -201,10 +203,11 @@ private fun SuggestionCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                VsTextColumn(
+                VsItemColumn(
                     modifier = Modifier.weight(1f),
                     label = "LOST",
                     labelColor = Color(0xFFEF4444),
+                    imageUrl = pair.lostItem.imageUrl,
                     title = pair.lostItem.itemName,
                     subtitle = pair.lostItem.locationLost
                 )
@@ -219,10 +222,11 @@ private fun SuggestionCard(
                     )
                 }
 
-                VsTextColumn(
+                VsItemColumn(
                     modifier = Modifier.weight(1f),
                     label = "FOUND",
                     labelColor = Color(0xFF10B981),
+                    imageUrl = pair.foundItem.imageUrl,
                     title = pair.foundItem.itemName,
                     subtitle = pair.foundItem.locationFound
                 )
@@ -245,10 +249,11 @@ private fun SuggestionCard(
 }
 
 @Composable
-private fun VsTextColumn(
+private fun VsItemColumn(
     modifier: Modifier,
     label: String,
     labelColor: Color,
+    imageUrl: String?,
     title: String,
     subtitle: String
 ) {
@@ -261,6 +266,32 @@ private fun VsTextColumn(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 fontWeight = FontWeight.Bold
             )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        if (!imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .background(Color(0xFFF0F0F2), RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .background(Color(0xFFF0F0F2), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = Color(0xFF8D8D93)
+                )
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(

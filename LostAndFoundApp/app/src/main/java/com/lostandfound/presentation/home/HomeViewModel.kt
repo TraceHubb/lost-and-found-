@@ -58,7 +58,7 @@ class HomeViewModel : ViewModel() {
             }
 
             // Active users can be fetched once (the main refresh requirement is graph counts).
-            val activeUsersCount = runCatching {
+            val activeUsersFromProfiles = runCatching {
                 FirebaseProviders.firestore.collection("users").get().await().size()
             }.getOrDefault(0)
 
@@ -67,6 +67,17 @@ class HomeViewModel : ViewModel() {
                 SimpleItemsRepository.observeLostItems(),
                 SimpleItemsRepository.observeFoundItems()
             ) { lostItems, foundItems ->
+                val userIdsFromItems = buildSet {
+                    lostItems.mapNotNullTo(this) { it.reporterId.takeIf { id -> id.isNotBlank() } }
+                    foundItems.mapNotNullTo(this) { it.reporterId.takeIf { id -> id.isNotBlank() } }
+                    add(currentUserId)
+                }
+                val activeUsersCount = when {
+                    activeUsersFromProfiles > 0 -> maxOf(activeUsersFromProfiles, userIdsFromItems.size)
+                    userIdsFromItems.isNotEmpty() -> userIdsFromItems.size
+                    else -> 1 // at least current signed-in user
+                }
+
                 val overviewLostItems = lostItems.size
                 val overviewFoundItems = foundItems.size
 
